@@ -1040,7 +1040,10 @@ async function loadPortfolios(uid) {
   if (unsubPortfolios) unsubPortfolios();
   unsubPortfolios = onSnapshot(colRef, snap => {
     portfolios = {};
-    snap.forEach(d => { portfolios[d.id] = d.data(); });
+    snap.forEach(d => {
+      // Deep clone to prevent Firestore object references bleeding between portfolios
+      portfolios[d.id] = JSON.parse(JSON.stringify(d.data()));
+    });
     if (!currentPortId || !portfolios[currentPortId]) {
       const ids = Object.keys(portfolios);
       currentPortId = ids.length ? ids[0] : null;
@@ -1055,7 +1058,7 @@ async function savePortfolio() {
   const port = getCurPort();
   if (!port) return;
   try {
-    await setDoc(doc(db, 'users', currentUser.uid, 'portfolios', currentPortId), port);
+    await setDoc(doc(db, 'users', currentUser.uid, 'portfolios', currentPortId), port, { merge: true });
   } catch(e) { console.error('Save error', e); }
 }
 
@@ -1080,7 +1083,7 @@ async function createPortfolio(name) {
   toast('Portfolio "' + name + '" created');
 }
 
-async function deletePortfolio(id) {
+window.deletePortfolio = async function(id) {
   if (!currentUser) return;
   await deleteDoc(doc(db, 'users', currentUser.uid, 'portfolios', id));
   delete portfolios[id];
@@ -1177,7 +1180,7 @@ window.submitRenamePortfolio = async (id) => {
   if (!name) return;
   portfolios[id].name = name;
   closeModal();
-  await setDoc(doc(db, 'users', currentUser.uid, 'portfolios', id), portfolios[id]);
+  await setDoc(doc(db, 'users', currentUser.uid, 'portfolios', id), portfolios[id], { merge: true });
   renderPortfolioList();
   render();
   toast('Portfolio renamed');
@@ -1202,7 +1205,7 @@ window.submitManagePortfolio = async (id) => {
   if (!name) return;
   portfolios[id].name = name;
   closeModal();
-  await setDoc(doc(db, 'users', currentUser.uid, 'portfolios', id), portfolios[id]);
+  await setDoc(doc(db, 'users', currentUser.uid, 'portfolios', id), portfolios[id], { merge: true });
   renderPortfolioList();
   render();
   toast('Portfolio renamed');
