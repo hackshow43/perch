@@ -115,7 +115,7 @@
   .auth-err { font-size: 12px; color: var(--danger); margin-top: 0.75rem; text-align: center; min-height: 18px; }
 
   /* ── APP SHELL ── */
-  #app { display: none; height: 100vh; overflow: hidden; }
+  #app { display: none; height: 100vh; overflow: hidden; max-width: 100vw; }
   #app.visible { display: flex; }
 
   /* ── SIDEBAR ── */
@@ -227,8 +227,10 @@
   #main {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     height: 100vh;
     background: var(--navy);
+    min-width: 0;
   }
   .page { display: none; padding: 2rem; max-width: 960px; margin: 0 auto; animation: fadeUp 0.25s ease; }
   .page.on { display: block; }
@@ -437,20 +439,60 @@
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
   /* ── RESPONSIVE ── */
+  /* ── CUSTOM ROW (desktop) ── */
+  .custom-row {
+    display: grid;
+    grid-template-columns: 110px 1fr 150px 90px 80px;
+    gap: 8px;
+    align-items: end;
+  }
+
   @media (max-width: 768px) {
     #sidebar { display: none; }
     #bottom-nav { display: block; }
     #mobile-port-bar { display: flex; }
-    #main { padding-bottom: 70px; }
-    .page { padding: 1rem; }
-    .metrics-grid { grid-template-columns: repeat(2, 1fr); }
-    .holding-row { grid-template-columns: 60px 1fr 90px 28px; }
+    #main { padding-bottom: 70px; overflow-x: hidden; }
+    .page { padding: 0.85rem; max-width: 100vw; overflow-x: hidden; }
+    .page-header h1 { font-size: 1.4rem; }
+
+    /* Metrics — 2 cols then stack to 1 on very small */
+    .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .metric-value { font-size: 1.3rem; }
+
+    /* Holding cards */
+    .holding-row { grid-template-columns: 56px minmax(0,1fr) 80px 28px; gap: 6px; }
+    .hticker { font-size: 11px; padding: 2px 6px; }
+
+    /* Custom ticker — stack into 2-col grid on mobile */
+    .custom-row {
+      grid-template-columns: 1fr 1fr;
+    }
+    .custom-row > div:nth-child(2) { grid-column: 1 / -1; }
+
+    /* Allocation bars */
+    .abar-label { width: 90px; font-size: 11px; }
+    .abar-tpct { display: none; }
+
+    /* Other */
     .preset-grid { grid-template-columns: 1fr; }
-    .abar-label { width: 100px; font-size: 11px; }
     #toast { bottom: 90px; }
     .trow { grid-template-columns: 1fr 70px 20px; }
-    .sr-item { grid-template-columns: 60px 1fr auto; }
+    .sr-item { grid-template-columns: 56px minmax(0,1fr) auto; }
     .sr-item .sr-exch { display: none; }
+
+    /* Prevent any child from busting out */
+    .card { overflow-x: hidden; }
+    input, select { max-width: 100%; }
+
+    /* Add holding row — stack amount + button */
+    .add-holding-row { flex-direction: column; align-items: stretch !important; }
+    .add-holding-row input { width: 100% !important; }
+    .add-holding-row button { width: 100%; }
+  }
+
+  @media (max-width: 380px) {
+    .metrics-grid { grid-template-columns: 1fr; }
+    .holding-row { grid-template-columns: 52px minmax(0,1fr) 72px 24px; gap: 4px; }
   }
 
   /* ── LEGEND ── */
@@ -582,7 +624,7 @@
             <input type="text" id="srch" placeholder="Search ticker or fund name (e.g. XIC, Vanguard, S&P 500)..." oninput="doSearch()" onkeydown="searchKey(event)" autocomplete="off" />
             <div id="search-results"></div>
           </div>
-          <div class="row mt-1" style="flex-wrap:wrap;gap:8px;">
+          <div class="row mt-1 add-holding-row" style="flex-wrap:wrap;gap:8px;">
             <input type="number" id="add-amt" placeholder="$ amount" min="0" step="100" style="width:160px;" onkeydown="if(event.key==='Enter')confirmAdd()" />
             <button class="btn btn-amber" onclick="confirmAdd()" id="add-btn" disabled>Add to portfolio</button>
             <span class="text-muted" id="sel-label" style="font-size:12px;"></span>
@@ -590,7 +632,7 @@
           <!-- Custom ticker -->
           <hr class="divider" />
           <div class="card-title" style="margin-bottom:0.75rem;">Add custom ticker</div>
-          <div style="display:grid;grid-template-columns:110px 1fr 150px 90px 80px;gap:8px;align-items:end;flex-wrap:wrap;" id="custom-row">
+          <div id="custom-row" class="custom-row">
             <div><label class="text-muted" style="display:block;font-size:11px;margin-bottom:4px;">Ticker</label><input type="text" id="cticker" placeholder="e.g. MAPS" style="text-transform:uppercase;" /></div>
             <div><label class="text-muted" style="display:block;font-size:11px;margin-bottom:4px;">Name</label><input type="text" id="cname" placeholder="Company or fund name" /></div>
             <div><label class="text-muted" style="display:block;font-size:11px;margin-bottom:4px;">Category</label>
