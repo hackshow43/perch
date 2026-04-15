@@ -335,7 +335,9 @@
   .del-btn { background: none; border: none; color: var(--navy-4); cursor: pointer; font-size: 18px; line-height: 1; transition: color 0.15s; padding: 0; }
   .del-btn:hover { color: var(--danger); }
   .liq-btn { background: none; border: none; color: var(--navy-4); cursor: pointer; font-size: 13px; font-weight: 600; line-height: 1; transition: color 0.15s; padding: 0; font-family: 'Outfit', sans-serif; }
-  .liq-btn:hover { color: var(--amber); }
+  .liq-btn:hover { color: #5cb88a; }
+  .edit-btn { background: none; border: none; color: var(--navy-4); cursor: pointer; font-size: 13px; line-height: 1; transition: color 0.15s; padding: 0; }
+  .edit-btn:hover { color: var(--amber); }
 
   /* ── ALLOC BARS ── */
   .abar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; font-size: 13px; }
@@ -384,7 +386,7 @@
   .modal {
     background: var(--navy-2); border: 1px solid var(--navy-4);
     border-radius: var(--radius-lg); padding: 1.75rem;
-    width: 100%; max-width: 400px;
+    width: 100%; max-width: 480px;
     animation: fadeUp 0.25s ease;
   }
   .modal h2 { font-family: 'DM Serif Display', serif; font-size: 1.25rem; margin-bottom: 1.25rem; font-weight: 400; }
@@ -652,11 +654,12 @@
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
             <div>
               <div class="card-title" style="margin-bottom:2px;">Cash balance</div>
-              <div style="font-size:1.4rem;font-family:'DM Serif Display',serif;color:#5cb88a;" id="cash-display">$0</div>
+              <div style="font-size:1.4rem;font-family:'DM Serif Display',serif;color:#5cb88a;" id="cash-display">$0.00</div>
             </div>
-            <div class="row" style="gap:8px;">
-              <input type="text" inputmode="numeric" id="cash-input" placeholder="$ amount" style="width:130px;" onkeydown="if(event.key==='Enter')setCash()" />
+            <div class="row" style="gap:8px;flex-wrap:wrap;">
+              <input type="text" inputmode="decimal" id="cash-input" placeholder="$ amount" style="width:130px;" onkeydown="if(event.key==='Enter')setCash()" />
               <button class="btn btn-ghost" onclick="setCash()">Update</button>
+              <button class="btn btn-amber" id="reinvest-btn" onclick="openReinvest()" style="display:none;">Reinvest cash</button>
             </div>
           </div>
         </div>
@@ -670,7 +673,7 @@
             <div id="search-results"></div>
           </div>
           <div class="row mt-1 add-holding-row" style="flex-wrap:wrap;gap:8px;">
-            <input type="text" inputmode="numeric" id="add-amt" placeholder="$ amount" style="width:160px;" onkeydown="if(event.key==='Enter')confirmAdd()" />
+            <input type="text" inputmode="decimal" id="add-amt" placeholder="$ amount" style="width:160px;" onkeydown="if(event.key==='Enter')confirmAdd()" />
             <button class="btn btn-amber" onclick="confirmAdd()" id="add-btn" disabled>Add to portfolio</button>
             <span class="text-muted" id="sel-label" style="font-size:12px;"></span>
           </div>
@@ -708,7 +711,7 @@
                 <option value="7">7 — Speculative</option>
               </select>
             </div>
-            <div><label class="text-muted" style="display:block;font-size:11px;margin-bottom:4px;">$ Amount</label><input type="text" inputmode="numeric" id="camt" placeholder="Amount" /></div>
+            <div><label class="text-muted" style="display:block;font-size:11px;margin-bottom:4px;">$ Amount</label><input type="text" inputmode="decimal" id="camt" placeholder="Amount" /></div>
           </div>
           <div class="row-end mt-1">
             <button class="btn btn-ghost" onclick="addCustom()">Add custom</button>
@@ -879,141 +882,486 @@ const CATS = {
 const RISK_LABELS = ['','Very low','Low','Moderate','Moderate-high','High','Very high','Speculative'];
 
 const ETF_DB = [
-  // CA All-in-one
-  {t:'XEQT',n:'iShares Core Equity ETF Portfolio',c:'all-in-one',r:4,ex:'CA',note:'100% global equity'},
-  {t:'VEQT',n:'Vanguard All-Equity ETF Portfolio',c:'all-in-one',r:4,ex:'CA',note:'100% global equity'},
-  {t:'VGRO',n:'Vanguard Growth ETF Portfolio',c:'all-in-one',r:3,ex:'CA',note:'80/20 equity/bonds'},
-  {t:'VBAL',n:'Vanguard Balanced ETF Portfolio',c:'all-in-one',r:3,ex:'CA',note:'60/40 equity/bonds'},
-  {t:'VCNS',n:'Vanguard Conservative ETF Portfolio',c:'all-in-one',r:2,ex:'CA',note:'40/60 equity/bonds'},
-  {t:'VCIP',n:'Vanguard Conservative Income ETF Portfolio',c:'all-in-one',r:2,ex:'CA',note:'20/80 equity/bonds'},
-  {t:'ZGRO',n:'BMO Growth ETF Portfolio',c:'all-in-one',r:3,ex:'CA',note:'80/20 equity/bonds'},
-  {t:'ZBAL',n:'BMO Balanced ETF Portfolio',c:'all-in-one',r:3,ex:'CA',note:'60/40 equity/bonds'},
-  {t:'ZCON',n:'BMO Conservative ETF Portfolio',c:'all-in-one',r:2,ex:'CA',note:'40/60 equity/bonds'},
-  {t:'ZEQT',n:'BMO All-Equity ETF Portfolio',c:'all-in-one',r:4,ex:'CA',note:'100% global equity'},
-  {t:'XGRO',n:'iShares Core Growth ETF Portfolio',c:'all-in-one',r:3,ex:'CA',note:'80/20 equity/bonds'},
-  {t:'XBAL',n:'iShares Core Balanced ETF Portfolio',c:'all-in-one',r:3,ex:'CA',note:'60/40 equity/bonds'},
-  {t:'XCNS',n:'iShares Core Conservative Balanced ETF Portfolio',c:'all-in-one',r:2,ex:'CA',note:'40/60 equity/bonds'},
-  {t:'XINC',n:'iShares Core Income Balanced ETF Portfolio',c:'all-in-one',r:2,ex:'CA',note:'20/80 equity/bonds'},
-  {t:'TGRO',n:'TD One-Click Growth ETF Portfolio',c:'all-in-one',r:3,ex:'CA',note:'80/20 equity/bonds'},
-  {t:'TBAL',n:'TD One-Click Balanced ETF Portfolio',c:'all-in-one',r:3,ex:'CA',note:'60/40 equity/bonds'},
-  {t:'TCNS',n:'TD One-Click Conservative ETF Portfolio',c:'all-in-one',r:2,ex:'CA',note:'40/60 equity/bonds'},
-  {t:'TEQT',n:'TD One-Click Equity ETF Portfolio',c:'all-in-one',r:4,ex:'CA',note:'100% global equity'},
-  // CA Equity
-  {t:'XIC',n:'iShares Core S&P/TSX Capped Composite',c:'ca-equity',r:3,ex:'CA',note:'Broad Canadian market'},
-  {t:'XIU',n:'iShares S&P/TSX 60 Index ETF',c:'ca-equity',r:3,ex:'CA',note:'Top 60 TSX companies'},
-  {t:'ZCN',n:'BMO S&P/TSX Capped Composite Index ETF',c:'ca-equity',r:3,ex:'CA',note:'Broad Canadian market'},
-  {t:'VCN',n:'Vanguard FTSE Canada All Cap Index ETF',c:'ca-equity',r:3,ex:'CA',note:'Broad Canadian market'},
-  {t:'QCN',n:'Mackenzie Canadian Equity Index ETF',c:'ca-equity',r:3,ex:'CA',note:'Broad Canadian market'},
-  {t:'HXT',n:'Global X S&P/TSX 60 Index Corporate Class ETF',c:'ca-equity',r:3,ex:'CA',note:'Total return S&P/TSX 60'},
-  {t:'XCS',n:'iShares S&P/TSX SmallCap Index ETF',c:'ca-equity',r:5,ex:'CA',note:'Canadian small cap'},
-  {t:'ZLB',n:'BMO Low Volatility Canadian Equity ETF',c:'ca-equity',r:3,ex:'CA',note:'Low-vol factor tilt'},
-  {t:'XDV',n:'iShares Canadian Select Dividend Index ETF',c:'ca-equity',r:3,ex:'CA',note:'Canadian dividend'},
-  {t:'CDZ',n:'iShares S&P/TSX Canadian Dividend Aristocrats',c:'ca-equity',r:3,ex:'CA',note:'Dividend growers'},
-  {t:'ZWC',n:'BMO Canadian High Dividend Covered Call ETF',c:'ca-equity',r:4,ex:'CA',note:'Covered call overlay'},
-  // CA Sector
-  {t:'ZEB',n:'BMO Equal Weight Banks ETF',c:'sector',r:4,ex:'CA',note:'Canadian big 6 banks'},
-  {t:'HCAL',n:'Hamilton Enhanced Canadian Bank ETF',c:'leveraged',r:7,ex:'CA',note:'25% leveraged Canadian banks'},
-  {t:'ZWB',n:'BMO Covered Call Canadian Banks ETF',c:'sector',r:4,ex:'CA',note:'Banks with covered calls'},
-  {t:'ZEO',n:'BMO Equal Weight Oil & Gas ETF',c:'sector',r:5,ex:'CA',note:'Canadian energy'},
-  {t:'XEG',n:'iShares S&P/TSX Capped Energy Index ETF',c:'sector',r:5,ex:'CA',note:'Canadian energy'},
-  {t:'XMA',n:'iShares S&P/TSX Capped Materials Index ETF',c:'sector',r:5,ex:'CA',note:'Canadian materials'},
-  {t:'XFN',n:'iShares S&P/TSX Capped Financials Index ETF',c:'sector',r:4,ex:'CA',note:'Canadian financials'},
-  {t:'ZRE',n:'BMO Equal Weight REITs Index ETF',c:'reit',r:4,ex:'CA',note:'Canadian REITs'},
-  {t:'XRE',n:'iShares S&P/TSX Capped REIT Index ETF',c:'reit',r:4,ex:'CA',note:'Canadian REITs'},
-  {t:'XUT',n:'iShares S&P/TSX Capped Utilities Index ETF',c:'sector',r:3,ex:'CA',note:'Canadian utilities'},
-  {t:'XIT',n:'iShares S&P/TSX Capped Info Tech Index ETF',c:'sector',r:5,ex:'CA',note:'Canadian tech'},
-  {t:'XGD',n:'iShares S&P/TSX Global Gold Index ETF',c:'commodity',r:6,ex:'CA',note:'Gold mining companies'},
-  {t:'ZGD',n:'BMO Equal Weight Global Gold Index ETF',c:'commodity',r:6,ex:'CA',note:'Global gold miners'},
-  {t:'TEC',n:'TD Global Technology Leaders Index ETF',c:'sector',r:5,ex:'CA',note:'Global tech leaders'},
-  {t:'HDIV',n:'Hamilton Enhanced Multi-Sector Covered Call ETF',c:'leveraged',r:5,ex:'CA',note:'Leveraged covered call'},
-  // CA US Equity
-  {t:'VFV',n:'Vanguard S&P 500 Index ETF (CAD)',c:'us-equity',r:4,ex:'CA',note:'S&P 500 unhedged CAD'},
-  {t:'VSP',n:'Vanguard S&P 500 Index ETF (CAD-hedged)',c:'us-equity',r:4,ex:'CA',note:'S&P 500 hedged to CAD'},
-  {t:'ZSP',n:'BMO S&P 500 Index ETF',c:'us-equity',r:4,ex:'CA',note:'S&P 500 unhedged'},
-  {t:'XSP',n:'iShares Core S&P 500 Index ETF (CAD-hedged)',c:'us-equity',r:4,ex:'CA',note:'S&P 500 hedged to CAD'},
-  {t:'HXS',n:'Global X S&P 500 Index Corporate Class ETF',c:'us-equity',r:4,ex:'CA',note:'Total return S&P 500'},
-  {t:'VUN',n:'Vanguard US Total Market Index ETF',c:'us-equity',r:4,ex:'CA',note:'Total US market'},
-  {t:'ZUE',n:'BMO MSCI USA ESG Leaders Index ETF',c:'us-equity',r:4,ex:'CA',note:'US ESG leaders'},
-  // CA International
-  {t:'XAW',n:'iShares Core MSCI All Country World ex Canada',c:'intl-equity',r:4,ex:'CA',note:'Global ex-Canada'},
-  {t:'VXC',n:'Vanguard FTSE All-World ex Canada Index ETF',c:'intl-equity',r:4,ex:'CA',note:'Global ex-Canada'},
-  {t:'ZDI',n:'BMO International Dividend ETF',c:'intl-equity',r:4,ex:'CA',note:'International dividend tilt'},
-  {t:'ZEF',n:'BMO MSCI EAFE Index ETF',c:'intl-equity',r:4,ex:'CA',note:'Europe, Australasia, Far East'},
-  {t:'XEF',n:'iShares Core MSCI EAFE IMI Index ETF',c:'intl-equity',r:4,ex:'CA',note:'Developed ex-North America'},
-  {t:'VDU',n:'Vanguard FTSE Developed ex North America',c:'intl-equity',r:4,ex:'CA',note:'Developed international'},
-  {t:'ZEM',n:'BMO MSCI Emerging Markets Index ETF',c:'em-equity',r:5,ex:'CA',note:'Emerging markets'},
-  {t:'XEC',n:'iShares Core MSCI Emerging Markets IMI Index',c:'em-equity',r:5,ex:'CA',note:'Emerging markets'},
-  {t:'VEE',n:'Vanguard FTSE Emerging Markets All Cap Index',c:'em-equity',r:5,ex:'CA',note:'Emerging markets'},
-  // CA Bonds
-  {t:'ZAG',n:'BMO Aggregate Bond ETF',c:'bonds-ca',r:2,ex:'CA',note:'Broad Canadian bonds'},
-  {t:'XBB',n:'iShares Core Canadian Universe Bond ETF',c:'bonds-ca',r:2,ex:'CA',note:'Broad Canadian bonds'},
-  {t:'VAB',n:'Vanguard Canadian Aggregate Bond Index ETF',c:'bonds-ca',r:2,ex:'CA',note:'Broad Canadian bonds'},
-  {t:'ZGB',n:'BMO Government Bond Index ETF',c:'bonds-ca',r:1,ex:'CA',note:'Canadian government bonds'},
-  {t:'XGB',n:'iShares Canadian Government Bond Index ETF',c:'bonds-ca',r:1,ex:'CA',note:'Canadian government bonds'},
-  {t:'ZCB',n:'BMO Corporate Bond Index ETF',c:'bonds-ca',r:2,ex:'CA',note:'Canadian corporate bonds'},
-  {t:'XSB',n:'iShares Core Canadian Short Term Bond',c:'bonds-ca',r:1,ex:'CA',note:'Short-term bonds'},
-  {t:'VSB',n:'Vanguard Canadian Short-Term Bond Index ETF',c:'bonds-ca',r:1,ex:'CA',note:'Short-term bonds'},
-  {t:'ZST',n:'BMO Short-Term Bond Index ETF',c:'bonds-ca',r:1,ex:'CA',note:'Short-term bonds'},
-  {t:'XLB',n:'iShares Core Canadian Long Term Bond ETF',c:'bonds-ca',r:3,ex:'CA',note:'Long-term bonds'},
-  {t:'ZLC',n:'BMO Long Corporate Bond Index ETF',c:'bonds-ca',r:3,ex:'CA',note:'Long corporate bonds'},
-  {t:'ZHY',n:'BMO High Yield US Corporate Bond Hedged to CAD',c:'bonds-us',r:4,ex:'CA',note:'US high yield bonds'},
-  // CA Commodity / Precious metals
-  {t:'CGL',n:'iShares Gold Bullion ETF (CAD-hedged)',c:'commodity',r:4,ex:'CA',note:'Physical gold hedged'},
-  {t:'PHYS',n:'Sprott Physical Gold Trust',c:'commodity',r:4,ex:'CA',note:'Physical gold bullion'},
-  {t:'PSLV',n:'Sprott Physical Silver Trust',c:'commodity',r:5,ex:'CA',note:'Physical silver bullion'},
-  // US-listed ETFs
-  {t:'VOO',n:'Vanguard S&P 500 ETF',c:'us-equity',r:4,ex:'US',note:'S&P 500 index'},
-  {t:'VTI',n:'Vanguard Total Stock Market ETF',c:'us-equity',r:4,ex:'US',note:'Total US market'},
-  {t:'IVV',n:'iShares Core S&P 500 ETF',c:'us-equity',r:4,ex:'US',note:'S&P 500 index'},
-  {t:'SPY',n:'SPDR S&P 500 ETF Trust',c:'us-equity',r:4,ex:'US',note:'S&P 500 — original ETF'},
-  {t:'QQQ',n:'Invesco QQQ Trust (Nasdaq-100)',c:'us-equity',r:5,ex:'US',note:'Nasdaq-100 tech heavy'},
-  {t:'VEA',n:'Vanguard FTSE Developed Markets ETF',c:'intl-equity',r:4,ex:'US',note:'Developed ex-US'},
-  {t:'IEFA',n:'iShares Core MSCI EAFE ETF',c:'intl-equity',r:4,ex:'US',note:'Developed ex-North America'},
-  {t:'VWO',n:'Vanguard FTSE Emerging Markets ETF',c:'em-equity',r:5,ex:'US',note:'Emerging markets'},
-  {t:'IEMG',n:'iShares Core MSCI Emerging Markets ETF',c:'em-equity',r:5,ex:'US',note:'Emerging markets'},
-  {t:'VT',n:'Vanguard Total World Stock ETF',c:'intl-equity',r:4,ex:'US',note:'Total world equity'},
-  {t:'VXUS',n:'Vanguard Total International Stock ETF',c:'intl-equity',r:4,ex:'US',note:'All international ex-US'},
-  {t:'BND',n:'Vanguard Total Bond Market ETF',c:'bonds-us',r:2,ex:'US',note:'Total US bond market'},
-  {t:'AGG',n:'iShares Core US Aggregate Bond ETF',c:'bonds-us',r:2,ex:'US',note:'US bond aggregate'},
-  {t:'BNDX',n:'Vanguard Total International Bond ETF',c:'bonds-intl',r:2,ex:'US',note:'International bonds hedged USD'},
-  {t:'LQD',n:'iShares iBoxx Investment Grade Corporate Bond',c:'bonds-us',r:2,ex:'US',note:'Investment grade corporate bonds'},
-  {t:'TLT',n:'iShares 20+ Year Treasury Bond ETF',c:'bonds-us',r:4,ex:'US',note:'Long-term US Treasuries'},
-  {t:'SHY',n:'iShares 1-3 Year Treasury Bond ETF',c:'bonds-us',r:1,ex:'US',note:'Short-term Treasuries'},
-  {t:'TIPS',n:'iShares TIPS Bond ETF',c:'bonds-us',r:2,ex:'US',note:'Inflation-protected bonds'},
-  {t:'SGOV',n:'iShares 0-3 Month Treasury Bond ETF',c:'bonds-us',r:1,ex:'US',note:'Ultra short treasury'},
-  {t:'VNQ',n:'Vanguard Real Estate ETF',c:'reit',r:4,ex:'US',note:'US REITs'},
-  {t:'IYR',n:'iShares US Real Estate ETF',c:'reit',r:4,ex:'US',note:'US REITs'},
-  {t:'XLRE',n:'Real Estate Select Sector SPDR Fund',c:'reit',r:4,ex:'US',note:'US real estate'},
-  {t:'GLD',n:'SPDR Gold Shares ETF',c:'commodity',r:4,ex:'US',note:'Physical gold'},
-  {t:'IAU',n:'iShares Gold Trust',c:'commodity',r:4,ex:'US',note:'Physical gold'},
-  {t:'SLV',n:'iShares Silver Trust',c:'commodity',r:5,ex:'US',note:'Physical silver'},
-  {t:'GDX',n:'VanEck Gold Miners ETF',c:'commodity',r:6,ex:'US',note:'Gold mining companies'},
-  {t:'VIG',n:'Vanguard Dividend Appreciation ETF',c:'us-equity',r:3,ex:'US',note:'US dividend growers'},
-  {t:'VYM',n:'Vanguard High Dividend Yield ETF',c:'us-equity',r:3,ex:'US',note:'US high dividend'},
-  {t:'SCHD',n:'Schwab US Dividend Equity ETF',c:'us-equity',r:3,ex:'US',note:'US quality dividend'},
-  {t:'USMV',n:'iShares MSCI USA Min Vol Factor ETF',c:'us-equity',r:3,ex:'US',note:'US low volatility'},
-  {t:'ACWI',n:'iShares MSCI ACWI ETF',c:'intl-equity',r:4,ex:'US',note:'All-world equity'},
-  {t:'VGT',n:'Vanguard Information Technology ETF',c:'sector',r:5,ex:'US',note:'US tech sector'},
-  {t:'XLK',n:'Technology Select Sector SPDR Fund',c:'sector',r:5,ex:'US',note:'US tech sector'},
-  {t:'XLF',n:'Financial Select Sector SPDR Fund',c:'sector',r:4,ex:'US',note:'US financials'},
-  {t:'XLE',n:'Energy Select Sector SPDR Fund',c:'sector',r:5,ex:'US',note:'US energy'},
-  {t:'XLV',n:'Health Care Select Sector SPDR Fund',c:'sector',r:4,ex:'US',note:'US health care'},
-  {t:'XLU',n:'Utilities Select Sector SPDR Fund',c:'sector',r:3,ex:'US',note:'US utilities'},
-  {t:'XLP',n:'Consumer Staples Select Sector SPDR',c:'sector',r:3,ex:'US',note:'US consumer staples'},
-  {t:'XLY',n:'Consumer Discretionary Select Sector SPDR',c:'sector',r:4,ex:'US',note:'US consumer discretionary'},
-  {t:'XLB',n:'Materials Select Sector SPDR Fund',c:'sector',r:4,ex:'US',note:'US materials'},
-  {t:'XLI',n:'Industrial Select Sector SPDR Fund',c:'sector',r:4,ex:'US',note:'US industrials'},
-  {t:'IWM',n:'iShares Russell 2000 ETF',c:'us-equity',r:5,ex:'US',note:'US small cap'},
-  {t:'IJH',n:'iShares Core S&P Mid-Cap ETF',c:'us-equity',r:4,ex:'US',note:'US mid cap'},
-  {t:'JEPI',n:'JPMorgan Equity Premium Income ETF',c:'us-equity',r:4,ex:'US',note:'Covered call income'},
-  {t:'JEPQ',n:'JPMorgan Nasdaq Equity Premium Income ETF',c:'us-equity',r:5,ex:'US',note:'Covered call Nasdaq income'},
-  {t:'ARKK',n:'ARK Innovation ETF',c:'sector',r:7,ex:'US',note:'Disruptive innovation — speculative'},
-  {t:'TQQQ',n:'ProShares UltraPro QQQ',c:'leveraged',r:7,ex:'US',note:'3x leveraged Nasdaq-100'},
-  {t:'SQQQ',n:'ProShares UltraPro Short QQQ',c:'leveraged',r:7,ex:'US',note:'3x inverse Nasdaq-100'},
-  {t:'UPRO',n:'ProShares UltraPro S&P 500',c:'leveraged',r:7,ex:'US',note:'3x leveraged S&P 500'},
-  {t:'IBIT',n:'iShares Bitcoin Trust ETF',c:'crypto',r:7,ex:'US',note:'Spot Bitcoin ETF'},
-  {t:'FBTC',n:'Fidelity Wise Origin Bitcoin Fund',c:'crypto',r:7,ex:'US',note:'Spot Bitcoin ETF'},
-  {t:'ETHE',n:'Grayscale Ethereum Trust ETF',c:'crypto',r:7,ex:'US',note:'Spot Ethereum ETF'},
+  // ── CA ALL-IN-ONE ──
+  {t:'XEQT',n:'iShares Core Equity ETF Portfolio',c:'all-in-one',r:4,ex:'CA',note:'100% global equity',
+   mer:0.20,issuer:'BlackRock (iShares)',index:'Multi-index (XIC/XEF/XEC/XUU)',inception:'2019-08-07',dist:'Annual',
+   ret1:18.2,ret3:9.8,ret5:11.4,
+   desc:'A one-ticket 100% equity solution holding Canadian, US, international developed, and emerging market equities. Ideal for long-horizon investors who want to set-and-forget. Automatically rebalanced.'},
+  {t:'VEQT',n:'Vanguard All-Equity ETF Portfolio',c:'all-in-one',r:4,ex:'CA',note:'100% global equity',
+   mer:0.24,issuer:'Vanguard Canada',index:'Multi-index (VCN/VUN/VIU/VEE)',inception:'2019-01-29',dist:'Annual',
+   ret1:18.0,ret3:9.5,ret5:11.1,
+   desc:'Vanguard\'s all-equity portfolio with ~30% Canada home bias. Slightly higher Canada weight than XEQT. Popular for RRSP/TFSA accounts with a 20+ year horizon.'},
+  {t:'VGRO',n:'Vanguard Growth ETF Portfolio',c:'all-in-one',r:3,ex:'CA',note:'80/20 equity/bonds',
+   mer:0.24,issuer:'Vanguard Canada',index:'Multi-index',inception:'2018-01-25',dist:'Annual',
+   ret1:14.8,ret3:7.9,ret5:9.2,
+   desc:'80% global equity / 20% bonds. A slight cushion vs all-equity, suited for investors 10–25 years from retirement who want modest volatility reduction.'},
+  {t:'VBAL',n:'Vanguard Balanced ETF Portfolio',c:'all-in-one',r:3,ex:'CA',note:'60/40 equity/bonds',
+   mer:0.24,issuer:'Vanguard Canada',index:'Multi-index',inception:'2018-01-25',dist:'Quarterly',
+   ret1:11.2,ret3:5.8,ret5:7.1,
+   desc:'Classic 60/40 portfolio in a single ETF. Broadly diversified across global equities and Canadian bonds. A solid core for balanced investors.'},
+  {t:'VCNS',n:'Vanguard Conservative ETF Portfolio',c:'all-in-one',r:2,ex:'CA',note:'40/60 equity/bonds',
+   mer:0.24,issuer:'Vanguard Canada',index:'Multi-index',inception:'2018-01-25',dist:'Quarterly',
+   ret1:7.8,ret3:3.9,ret5:5.0,
+   desc:'40% equity / 60% bonds. Designed for investors closer to or in retirement who prioritize capital preservation over growth.'},
+  {t:'VCIP',n:'Vanguard Conservative Income ETF Portfolio',c:'all-in-one',r:2,ex:'CA',note:'20/80 equity/bonds',
+   mer:0.24,issuer:'Vanguard Canada',index:'Multi-index',inception:'2018-01-25',dist:'Monthly',
+   ret1:5.1,ret3:2.4,ret5:3.2,
+   desc:'20% equity / 80% bonds. Heavily income-oriented, very low equity exposure. Best for capital preservation and income in retirement.'},
+  {t:'ZGRO',n:'BMO Growth ETF Portfolio',c:'all-in-one',r:3,ex:'CA',note:'80/20 equity/bonds',
+   mer:0.20,issuer:'BMO Asset Management',index:'Multi-index',inception:'2019-09-25',dist:'Annual',
+   ret1:14.9,ret3:8.1,ret5:null,
+   desc:'BMO\'s 80/20 growth portfolio. Slightly lower MER than Vanguard equivalent. Holds BMO\'s own suite of index ETFs internally.'},
+  {t:'ZBAL',n:'BMO Balanced ETF Portfolio',c:'all-in-one',r:3,ex:'CA',note:'60/40 equity/bonds',
+   mer:0.20,issuer:'BMO Asset Management',index:'Multi-index',inception:'2019-09-25',dist:'Quarterly',
+   ret1:11.3,ret3:5.9,ret5:null,
+   desc:'BMO\'s 60/40 balanced portfolio. Competitive MER, holds BMO index ETFs internally. Good alternative to VBAL.'},
+  {t:'ZCON',n:'BMO Conservative ETF Portfolio',c:'all-in-one',r:2,ex:'CA',note:'40/60 equity/bonds',
+   mer:0.20,issuer:'BMO Asset Management',index:'Multi-index',inception:'2019-09-25',dist:'Quarterly',
+   ret1:7.9,ret3:4.0,ret5:null,
+   desc:'BMO\'s conservative 40/60 portfolio. Slightly cheaper than Vanguard equivalent (VCNS).'},
+  {t:'ZEQT',n:'BMO All-Equity ETF Portfolio',c:'all-in-one',r:4,ex:'CA',note:'100% global equity',
+   mer:0.20,issuer:'BMO Asset Management',index:'Multi-index',inception:'2019-09-25',dist:'Annual',
+   ret1:18.1,ret3:9.6,ret5:null,
+   desc:'BMO\'s all-equity one-ticket solution. Slightly lower MER than XEQT/VEQT. Holds BMO index ETFs internally.'},
+  {t:'XGRO',n:'iShares Core Growth ETF Portfolio',c:'all-in-one',r:3,ex:'CA',note:'80/20 equity/bonds',
+   mer:0.20,issuer:'BlackRock (iShares)',index:'Multi-index',inception:'2018-12-19',dist:'Annual',
+   ret1:14.7,ret3:7.9,ret5:9.1,
+   desc:'iShares 80/20 growth portfolio. Holds iShares\' own index ETFs. Competitive low MER.'},
+  {t:'XBAL',n:'iShares Core Balanced ETF Portfolio',c:'all-in-one',r:3,ex:'CA',note:'60/40 equity/bonds',
+   mer:0.20,issuer:'BlackRock (iShares)',index:'Multi-index',inception:'2018-12-19',dist:'Quarterly',
+   ret1:11.1,ret3:5.7,ret5:7.0,
+   desc:'iShares 60/40 balanced portfolio. One of the three major balanced ETF choices alongside VBAL and ZBAL.'},
+  {t:'XCNS',n:'iShares Core Conservative Balanced ETF Portfolio',c:'all-in-one',r:2,ex:'CA',note:'40/60 equity/bonds',
+   mer:0.20,issuer:'BlackRock (iShares)',index:'Multi-index',inception:'2018-12-19',dist:'Quarterly',
+   ret1:7.7,ret3:3.8,ret5:4.9,
+   desc:'iShares conservative portfolio for capital-preservation focused investors.'},
+  {t:'XINC',n:'iShares Core Income Balanced ETF Portfolio',c:'all-in-one',r:2,ex:'CA',note:'20/80 equity/bonds',
+   mer:0.20,issuer:'BlackRock (iShares)',index:'Multi-index',inception:'2018-12-19',dist:'Monthly',
+   ret1:5.0,ret3:2.3,ret5:3.1,
+   desc:'20% equity / 80% bonds. Income-focused with monthly distributions.'},
+  {t:'TGRO',n:'TD One-Click Growth ETF Portfolio',c:'all-in-one',r:3,ex:'CA',note:'80/20 equity/bonds',
+   mer:0.26,issuer:'TD Asset Management',index:'Multi-index',inception:'2019-10-22',dist:'Annual',
+   ret1:14.6,ret3:7.8,ret5:null,
+   desc:'TD\'s 80/20 growth all-in-one. Slightly higher MER than BMO/iShares equivalents. Holds TD index ETFs internally.'},
+  {t:'TBAL',n:'TD One-Click Balanced ETF Portfolio',c:'all-in-one',r:3,ex:'CA',note:'60/40 equity/bonds',
+   mer:0.26,issuer:'TD Asset Management',index:'Multi-index',inception:'2019-10-22',dist:'Quarterly',
+   ret1:11.0,ret3:5.6,ret5:null,
+   desc:'TD\'s balanced 60/40 one-ticket ETF.'},
+  {t:'TCNS',n:'TD One-Click Conservative ETF Portfolio',c:'all-in-one',r:2,ex:'CA',note:'40/60 equity/bonds',
+   mer:0.26,issuer:'TD Asset Management',index:'Multi-index',inception:'2019-10-22',dist:'Quarterly',
+   ret1:7.6,ret3:3.7,ret5:null,
+   desc:'TD\'s conservative 40/60 ETF portfolio.'},
+  {t:'TEQT',n:'TD One-Click Equity ETF Portfolio',c:'all-in-one',r:4,ex:'CA',note:'100% global equity',
+   mer:0.26,issuer:'TD Asset Management',index:'Multi-index',inception:'2019-10-22',dist:'Annual',
+   ret1:17.9,ret3:9.4,ret5:null,
+   desc:'TD\'s all-equity one-ticket solution. Higher MER than XEQT/VEQT/ZEQT alternatives.'},
+  // ── CA EQUITY ──
+  {t:'XIC',n:'iShares Core S&P/TSX Capped Composite',c:'ca-equity',r:3,ex:'CA',note:'Broad Canadian market',
+   mer:0.06,issuer:'BlackRock (iShares)',index:'S&P/TSX Capped Composite',inception:'2001-02-16',dist:'Quarterly',
+   ret1:21.0,ret3:10.2,ret5:10.8,
+   desc:'Canada\'s most popular domestic equity ETF. Ultra-low MER, holds ~240 companies across all TSX sectors. The go-to Canadian equity building block for couch potato portfolios.'},
+  {t:'XIU',n:'iShares S&P/TSX 60 Index ETF',c:'ca-equity',r:3,ex:'CA',note:'Top 60 TSX companies',
+   mer:0.18,issuer:'BlackRock (iShares)',index:'S&P/TSX 60',inception:'1990-09-28',dist:'Quarterly',
+   ret1:20.8,ret3:10.1,ret5:10.6,
+   desc:'The original Canadian ETF — first ETF ever listed in the world. Holds Canada\'s 60 largest companies. More concentrated than XIC but very liquid.'},
+  {t:'ZCN',n:'BMO S&P/TSX Capped Composite Index ETF',c:'ca-equity',r:3,ex:'CA',note:'Broad Canadian market',
+   mer:0.06,issuer:'BMO Asset Management',index:'S&P/TSX Capped Composite',inception:'2009-10-20',dist:'Quarterly',
+   ret1:20.9,ret3:10.1,ret5:10.7,
+   desc:'BMO\'s broad Canadian market ETF, essentially identical to XIC in holdings and MER. Good alternative if you prefer BMO.'},
+  {t:'VCN',n:'Vanguard FTSE Canada All Cap Index ETF',c:'ca-equity',r:3,ex:'CA',note:'Broad Canadian market',
+   mer:0.05,issuer:'Vanguard Canada',index:'FTSE Canada All Cap',inception:'2013-08-02',dist:'Quarterly',
+   ret1:20.7,ret3:10.0,ret5:10.6,
+   desc:'Vanguard\'s Canadian equity ETF. Slightly lower MER than XIC/ZCN. Tracks FTSE index vs S&P so includes slightly more small-cap exposure.'},
+  {t:'QCN',n:'Mackenzie Canadian Equity Index ETF',c:'ca-equity',r:3,ex:'CA',note:'Broad Canadian market',
+   mer:0.04,issuer:'Mackenzie Investments',index:'Solactive Canada Broad Market',inception:'2018-01-24',dist:'Quarterly',
+   ret1:20.6,ret3:9.9,ret5:10.5,
+   desc:'Lowest-MER broad Canadian equity ETF. Tracks a slightly different index (Solactive) but very similar exposure to XIC.'},
+  {t:'HXT',n:'Global X S&P/TSX 60 Index Corporate Class ETF',c:'ca-equity',r:3,ex:'CA',note:'Total return S&P/TSX 60',
+   mer:0.08,issuer:'Global X (Mirae)',index:'S&P/TSX 60 Total Return',inception:'2010-11-23',dist:'None (total return)',
+   ret1:20.9,ret3:10.2,ret5:10.7,
+   desc:'Corporate class structure means distributions are reinvested internally — no annual tax drag in non-registered accounts. Popular for taxable accounts.'},
+  {t:'XCS',n:'iShares S&P/TSX SmallCap Index ETF',c:'ca-equity',r:5,ex:'CA',note:'Canadian small cap',
+   mer:0.60,issuer:'BlackRock (iShares)',index:'S&P/TSX SmallCap',inception:'2007-03-19',dist:'Quarterly',
+   ret1:12.4,ret3:5.2,ret5:6.8,
+   desc:'Exposure to smaller Canadian companies not included in the main TSX composite. Higher volatility and MER than broad-market alternatives.'},
+  {t:'ZLB',n:'BMO Low Volatility Canadian Equity ETF',c:'ca-equity',r:3,ex:'CA',note:'Low-vol factor tilt',
+   mer:0.39,issuer:'BMO Asset Management',index:'MSCI Canada Min Vol',inception:'2011-10-21',dist:'Quarterly',
+   ret1:16.3,ret3:8.1,ret5:8.9,
+   desc:'Selects ~50 TSX stocks with historically lower price swings. Tends to outperform in downturns and lag in bull markets. Defensive tilt.'},
+  {t:'XDV',n:'iShares Canadian Select Dividend Index ETF',c:'ca-equity',r:3,ex:'CA',note:'Canadian dividend',
+   mer:0.55,issuer:'BlackRock (iShares)',index:'Dow Jones Canada Select Dividend',inception:'1999-12-19',dist:'Monthly',
+   ret1:15.8,ret3:7.9,ret5:8.4,
+   desc:'30 highest-yielding Canadian dividend stocks. Monthly distributions. Higher MER than index funds but attractive for income investors.'},
+  {t:'CDZ',n:'iShares S&P/TSX Canadian Dividend Aristocrats',c:'ca-equity',r:3,ex:'CA',note:'Dividend growers',
+   mer:0.66,issuer:'BlackRock (iShares)',index:'S&P/TSX Canadian Dividend Aristocrats',inception:'2006-09-08',dist:'Monthly',
+   ret1:14.9,ret3:7.2,ret5:7.8,
+   desc:'Companies that have consistently grown dividends for 5+ consecutive years. Quality tilt with income focus.'},
+  {t:'ZWC',n:'BMO Canadian High Dividend Covered Call ETF',c:'ca-equity',r:4,ex:'CA',note:'Covered call overlay',
+   mer:0.65,issuer:'BMO Asset Management',index:'Active',inception:'2017-02-08',dist:'Monthly',
+   ret1:11.2,ret3:5.8,ret5:6.9,
+   desc:'High Canadian dividend stocks with covered call writing to boost monthly income. Capped upside in exchange for enhanced yield. Good for income-focused investors.'},
+  // ── CA SECTOR ──
+  {t:'ZEB',n:'BMO Equal Weight Banks ETF',c:'sector',r:4,ex:'CA',note:'Canadian big 6 banks',
+   mer:0.28,issuer:'BMO Asset Management',index:'Solactive Equal Weight Canada Banks',inception:'2009-10-20',dist:'Quarterly',
+   ret1:20.4,ret3:9.8,ret5:10.2,
+   desc:'Equal-weight exposure to Canada\'s 6 big banks (RBC, TD, BNS, BMO, CIBC, National). Avoids concentration in any single bank vs cap-weighted alternatives.'},
+  {t:'HCAL',n:'Hamilton Enhanced Canadian Bank ETF',c:'leveraged',r:7,ex:'CA',note:'25% leveraged Canadian banks',
+   mer:0.65,issuer:'Hamilton ETFs',index:'Active (holds ZEB + leverage)',inception:'2020-12-04',dist:'Monthly',
+   ret1:24.1,ret3:10.1,ret5:null,
+   desc:'Holds ZEB with 25% leverage applied, targeting 1.25x exposure to Canadian banks. Amplifies both gains and losses. Higher distributions reflect leverage income. Not suitable as a core holding.'},
+  {t:'ZWB',n:'BMO Covered Call Canadian Banks ETF',c:'sector',r:4,ex:'CA',note:'Banks with covered calls',
+   mer:0.72,issuer:'BMO Asset Management',index:'Active',inception:'2011-01-28',dist:'Monthly',
+   ret1:14.8,ret3:7.1,ret5:7.9,
+   desc:'Big 6 banks with covered call options written on top to generate enhanced monthly income. Sacrifices some upside for higher yield. Popular income ETF.'},
+  {t:'ZEO',n:'BMO Equal Weight Oil & Gas ETF',c:'sector',r:5,ex:'CA',note:'Canadian energy',
+   mer:0.61,issuer:'BMO Asset Management',index:'Solactive Equal Weight Canada Oil & Gas',inception:'2009-10-20',dist:'Quarterly',
+   ret1:14.2,ret3:12.8,ret5:11.4,
+   desc:'Equal-weight exposure to major Canadian oil & gas producers. High commodity price sensitivity. Cyclical and volatile.'},
+  {t:'XEG',n:'iShares S&P/TSX Capped Energy Index ETF',c:'sector',r:5,ex:'CA',note:'Canadian energy',
+   mer:0.61,issuer:'BlackRock (iShares)',index:'S&P/TSX Capped Energy',inception:'2001-03-19',dist:'Quarterly',
+   ret1:13.8,ret3:12.4,ret5:11.1,
+   desc:'Canadian energy sector ETF. Cap-weighted, so top producers (CNQ, SU, CVE) dominate. Highly correlated to oil prices.'},
+  {t:'XFN',n:'iShares S&P/TSX Capped Financials Index ETF',c:'sector',r:4,ex:'CA',note:'Canadian financials',
+   mer:0.61,issuer:'BlackRock (iShares)',index:'S&P/TSX Capped Financials',inception:'2001-03-19',dist:'Quarterly',
+   ret1:19.2,ret3:9.4,ret5:9.8,
+   desc:'Broad Canadian financial sector including banks, insurers, and asset managers. Cap-weighted, so banks dominate (~70%).'},
+  {t:'ZRE',n:'BMO Equal Weight REITs Index ETF',c:'reit',r:4,ex:'CA',note:'Canadian REITs',
+   mer:0.61,issuer:'BMO Asset Management',index:'Solactive Equal Weight Canada REIT',inception:'2010-05-19',dist:'Monthly',
+   ret1:8.4,ret3:1.2,ret5:4.8,
+   desc:'Equal-weight basket of Canadian REITs. Monthly distributions. Sensitive to interest rates — tends to underperform when rates rise.'},
+  {t:'XRE',n:'iShares S&P/TSX Capped REIT Index ETF',c:'reit',r:4,ex:'CA',note:'Canadian REITs',
+   mer:0.61,issuer:'BlackRock (iShares)',index:'S&P/TSX Capped REIT',inception:'2002-10-17',dist:'Monthly',
+   ret1:8.2,ret3:1.0,ret5:4.6,
+   desc:'Canada\'s most liquid REIT ETF. Cap-weighted so larger REITs dominate. Rate-sensitive sector.'},
+  {t:'XUT',n:'iShares S&P/TSX Capped Utilities Index ETF',c:'sector',r:3,ex:'CA',note:'Canadian utilities',
+   mer:0.61,issuer:'BlackRock (iShares)',index:'S&P/TSX Capped Utilities',inception:'2011-05-18',dist:'Quarterly',
+   ret1:7.8,ret3:2.1,ret5:5.2,
+   desc:'Canadian utilities sector — hydro, gas, pipelines. Defensive, dividend-paying, rate-sensitive. Lower volatility than broad market.'},
+  {t:'XIT',n:'iShares S&P/TSX Capped Info Tech Index ETF',c:'sector',r:5,ex:'CA',note:'Canadian tech',
+   mer:0.61,issuer:'BlackRock (iShares)',index:'S&P/TSX Capped Info Tech',inception:'2001-03-19',dist:'Annual',
+   ret1:28.4,ret3:8.2,ret5:14.1,
+   desc:'Small concentrated basket of Canadian tech stocks. Shopify dominates (~23%). High volatility, meaningful Shopify-specific risk.'},
+  {t:'XGD',n:'iShares S&P/TSX Global Gold Index ETF',c:'commodity',r:6,ex:'CA',note:'Gold mining companies',
+   mer:0.61,issuer:'BlackRock (iShares)',index:'S&P/TSX Global Gold',inception:'2001-03-23',dist:'Annual',
+   ret1:32.1,ret3:11.8,ret5:12.4,
+   desc:'~50 gold mining stocks globally (Canada + US + international). Leveraged to gold prices — miners move more than bullion. Volatile.'},
+  {t:'ZGD',n:'BMO Equal Weight Global Gold Index ETF',c:'commodity',r:6,ex:'CA',note:'Global gold miners',
+   mer:0.61,issuer:'BMO Asset Management',index:'Solactive Equal Weight Global Gold',inception:'2014-12-10',dist:'Annual',
+   ret1:31.8,ret3:11.4,ret5:12.1,
+   desc:'Equal-weight global gold miners. Similar to XGD but avoids concentration in largest miners.'},
+  {t:'TEC',n:'TD Global Technology Leaders Index ETF',c:'sector',r:5,ex:'CA',note:'Global tech leaders',
+   mer:0.25,issuer:'TD Asset Management',index:'Solactive Global Technology Leaders',inception:'2019-07-04',dist:'Annual',
+   ret1:36.2,ret3:13.4,ret5:18.8,
+   desc:'Low-MER global tech ETF in CAD. Holds top global tech companies (NVDA, AAPL, MSFT, etc.). Good alternative to QQQ for Canadian tech exposure with lower MER.'},
+  {t:'HDIV',n:'Hamilton Enhanced Multi-Sector Covered Call ETF',c:'leveraged',r:5,ex:'CA',note:'Leveraged covered call',
+   mer:0.65,issuer:'Hamilton ETFs',index:'Active',inception:'2021-06-23',dist:'Monthly',
+   ret1:13.2,ret3:6.8,ret5:null,
+   desc:'Holds a diversified basket of sector ETFs with 25% leverage and covered calls applied. Targets high monthly distributions. Complex strategy — upside is capped.'},
+  // ── CA US EQUITY ──
+  {t:'VFV',n:'Vanguard S&P 500 Index ETF (CAD)',c:'us-equity',r:4,ex:'CA',note:'S&P 500 unhedged CAD',
+   mer:0.09,issuer:'Vanguard Canada',index:'S&P 500',inception:'2012-11-02',dist:'Quarterly',
+   ret1:31.2,ret3:17.4,ret5:18.9,
+   desc:'Canada\'s most popular S&P 500 ETF. Unhedged — you get USD/CAD currency exposure alongside US market returns. Ultra-low MER. Ideal for RRSP (no foreign withholding tax drag).'},
+  {t:'VSP',n:'Vanguard S&P 500 Index ETF (CAD-hedged)',c:'us-equity',r:4,ex:'CA',note:'S&P 500 hedged to CAD',
+   mer:0.09,issuer:'Vanguard Canada',index:'S&P 500 (hedged)',inception:'2012-11-02',dist:'Quarterly',
+   ret1:26.4,ret3:14.8,ret5:16.2,
+   desc:'Same as VFV but with USD/CAD currency hedge. Removes currency risk but also removes currency upside. Underperforms VFV when CAD weakens vs USD.'},
+  {t:'ZSP',n:'BMO S&P 500 Index ETF',c:'us-equity',r:4,ex:'CA',note:'S&P 500 unhedged',
+   mer:0.09,issuer:'BMO Asset Management',index:'S&P 500',inception:'2012-11-14',dist:'Quarterly',
+   ret1:31.1,ret3:17.3,ret5:18.8,
+   desc:'BMO\'s S&P 500 ETF. Essentially identical to VFV in holdings, MER, and performance. Preference between the two is mostly about custodian.'},
+  {t:'XSP',n:'iShares Core S&P 500 Index ETF (CAD-hedged)',c:'us-equity',r:4,ex:'CA',note:'S&P 500 hedged to CAD',
+   mer:0.10,issuer:'BlackRock (iShares)',index:'S&P 500 (hedged)',inception:'2001-05-29',dist:'Quarterly',
+   ret1:26.3,ret3:14.7,ret5:16.1,
+   desc:'iShares CAD-hedged S&P 500 ETF. One of the oldest Canadian ETFs. Slightly higher MER than VSP.'},
+  {t:'HXS',n:'Global X S&P 500 Index Corporate Class ETF',c:'us-equity',r:4,ex:'CA',note:'Total return S&P 500',
+   mer:0.10,issuer:'Global X (Mirae)',index:'S&P 500 Total Return',inception:'2013-07-15',dist:'None (total return)',
+   ret1:31.3,ret3:17.5,ret5:19.0,
+   desc:'Corporate class structure — no annual distributions, capital gains deferred. Tax-efficient for non-registered accounts. Tracks total return index.'},
+  {t:'VUN',n:'Vanguard US Total Market Index ETF',c:'us-equity',r:4,ex:'CA',note:'Total US market',
+   mer:0.16,issuer:'Vanguard Canada',index:'CRSP US Total Market',inception:'2013-08-02',dist:'Quarterly',
+   ret1:30.8,ret3:16.9,ret5:18.5,
+   desc:'Broader than S&P 500 — includes mid and small cap US stocks (~4000 companies). More diversified US exposure than VFV.'},
+  // ── CA INTERNATIONAL ──
+  {t:'XAW',n:'iShares Core MSCI All Country World ex Canada',c:'intl-equity',r:4,ex:'CA',note:'Global ex-Canada',
+   mer:0.22,issuer:'BlackRock (iShares)',index:'MSCI ACWI ex Canada IMI',inception:'2015-02-10',dist:'Annual',
+   ret1:24.1,ret3:12.8,ret5:13.9,
+   desc:'One-ticket global equity exposure excluding Canada. Holds US, international developed, and emerging markets. Popular pairing with XIC for a simple 2-fund portfolio.'},
+  {t:'VXC',n:'Vanguard FTSE All-World ex Canada Index ETF',c:'intl-equity',r:4,ex:'CA',note:'Global ex-Canada',
+   mer:0.22,issuer:'Vanguard Canada',index:'FTSE All-World ex Canada',inception:'2014-08-01',dist:'Annual',
+   ret1:24.0,ret3:12.7,ret5:13.8,
+   desc:'Vanguard\'s global ex-Canada ETF. Nearly identical to XAW in composition and MER.'},
+  {t:'ZDI',n:'BMO International Dividend ETF',c:'intl-equity',r:4,ex:'CA',note:'International dividend tilt',
+   mer:0.48,issuer:'BMO Asset Management',index:'Active',inception:'2014-11-05',dist:'Monthly',
+   ret1:18.4,ret3:9.2,ret5:9.8,
+   desc:'International developed market dividend stocks (Europe, Japan, Australia). Monthly distributions. Note: foreign dividends don\'t get the Canadian dividend tax credit — hold in registered accounts.'},
+  {t:'XEF',n:'iShares Core MSCI EAFE IMI Index ETF',c:'intl-equity',r:4,ex:'CA',note:'Developed ex-North America',
+   mer:0.22,issuer:'BlackRock (iShares)',index:'MSCI EAFE IMI',inception:'2013-04-10',dist:'Annual',
+   ret1:17.2,ret3:8.4,ret5:9.1,
+   desc:'Europe, Australasia, and Far East developed markets — excludes US and Canada. Common building block in 3-fund portfolios.'},
+  {t:'VDU',n:'Vanguard FTSE Developed ex North America',c:'intl-equity',r:4,ex:'CA',note:'Developed international',
+   mer:0.22,issuer:'Vanguard Canada',index:'FTSE Developed ex North America',inception:'2013-08-02',dist:'Annual',
+   ret1:17.0,ret3:8.2,ret5:8.9,
+   desc:'Similar to XEF. Vanguard\'s international developed market ETF excluding North America.'},
+  {t:'ZEM',n:'BMO MSCI Emerging Markets Index ETF',c:'em-equity',r:5,ex:'CA',note:'Emerging markets',
+   mer:0.27,issuer:'BMO Asset Management',index:'MSCI Emerging Markets IMI',inception:'2009-10-20',dist:'Annual',
+   ret1:11.2,ret3:2.1,ret5:4.8,
+   desc:'Broad emerging market exposure — China, India, Taiwan, South Korea, Brazil. Higher growth potential, higher volatility and political risk.'},
+  {t:'XEC',n:'iShares Core MSCI Emerging Markets IMI Index',c:'em-equity',r:5,ex:'CA',note:'Emerging markets',
+   mer:0.27,issuer:'BlackRock (iShares)',index:'MSCI Emerging Markets IMI',inception:'2013-04-10',dist:'Annual',
+   ret1:11.1,ret3:2.0,ret5:4.7,
+   desc:'iShares emerging markets ETF. Similar to ZEM in holdings and MER.'},
+  {t:'VEE',n:'Vanguard FTSE Emerging Markets All Cap Index',c:'em-equity',r:5,ex:'CA',note:'Emerging markets',
+   mer:0.24,issuer:'Vanguard Canada',index:'FTSE Emerging Markets All Cap China A Inclusion',inception:'2013-08-02',dist:'Annual',
+   ret1:10.9,ret3:1.9,ret5:4.5,
+   desc:'Vanguard\'s EM ETF. Slightly lower MER than XEC/ZEM. Includes China A-shares.'},
+  // ── CA BONDS ──
+  {t:'ZAG',n:'BMO Aggregate Bond ETF',c:'bonds-ca',r:2,ex:'CA',note:'Broad Canadian bonds',
+   mer:0.09,issuer:'BMO Asset Management',index:'FTSE Canada Universe Bond',inception:'2010-01-19',dist:'Monthly',
+   ret1:3.8,ret3:-1.2,ret5:1.1,
+   desc:'Broad Canadian investment-grade bond market — government and corporate, all maturities. The standard bond building block for couch potato portfolios. Monthly distributions.'},
+  {t:'XBB',n:'iShares Core Canadian Universe Bond ETF',c:'bonds-ca',r:2,ex:'CA',note:'Broad Canadian bonds',
+   mer:0.10,issuer:'BlackRock (iShares)',index:'FTSE Canada Universe Bond',inception:'2000-11-20',dist:'Monthly',
+   ret1:3.7,ret3:-1.3,ret5:1.0,
+   desc:'iShares equivalent of ZAG. Broad Canadian investment-grade bonds. One of Canada\'s oldest bond ETFs.'},
+  {t:'VAB',n:'Vanguard Canadian Aggregate Bond Index ETF',c:'bonds-ca',r:2,ex:'CA',note:'Broad Canadian bonds',
+   mer:0.09,issuer:'Vanguard Canada',index:'Bloomberg Global Aggregate Canada Float Adjusted',inception:'2011-11-04',dist:'Monthly',
+   ret1:3.7,ret3:-1.2,ret5:1.0,
+   desc:'Vanguard\'s broad Canadian bond ETF. Very similar to ZAG and XBB.'},
+  {t:'ZGB',n:'BMO Government Bond Index ETF',c:'bonds-ca',r:1,ex:'CA',note:'Canadian government bonds',
+   mer:0.20,issuer:'BMO Asset Management',index:'FTSE Canada Government Bond',inception:'2011-10-18',dist:'Monthly',
+   ret1:4.1,ret3:-0.9,ret5:1.3,
+   desc:'Government bonds only — federal and provincial. No corporate credit risk. Lower yield than ZAG but safer in credit events.'},
+  {t:'XSB',n:'iShares Core Canadian Short Term Bond',c:'bonds-ca',r:1,ex:'CA',note:'Short-term bonds',
+   mer:0.10,issuer:'BlackRock (iShares)',index:'FTSE Canada Short Term Bond',inception:'2000-11-20',dist:'Monthly',
+   ret1:5.1,ret3:2.1,ret5:2.4,
+   desc:'Short-term bonds (1–5 years). Much lower interest rate sensitivity than broad or long bonds. Safer in rising rate environments.'},
+  {t:'VSB',n:'Vanguard Canadian Short-Term Bond Index ETF',c:'bonds-ca',r:1,ex:'CA',note:'Short-term bonds',
+   mer:0.11,issuer:'Vanguard Canada',index:'Bloomberg Global Aggregate Canada 1-5 Yr',inception:'2011-11-04',dist:'Monthly',
+   ret1:5.0,ret3:2.0,ret5:2.3,
+   desc:'Vanguard\'s short-term bond ETF. Essentially identical to XSB.'},
+  {t:'XLB',n:'iShares Core Canadian Long Term Bond ETF',c:'bonds-ca',r:3,ex:'CA',note:'Long-term bonds',
+   mer:0.20,issuer:'BlackRock (iShares)',index:'FTSE Canada Long Term Bond',inception:'2006-11-10',dist:'Monthly',
+   ret1:1.8,ret3:-5.2,ret5:-1.4,
+   desc:'Long-duration bonds (10+ years). Highest interest rate sensitivity — significant losses when rates rise, gains when rates fall. For sophisticated bond allocation.'},
+  {t:'ZHY',n:'BMO High Yield US Corporate Bond Hedged to CAD',c:'bonds-us',r:4,ex:'CA',note:'US high yield bonds',
+   mer:0.61,issuer:'BMO Asset Management',index:'Bloomberg US High Yield Very Liquid',inception:'2012-10-24',dist:'Monthly',
+   ret1:9.2,ret3:4.8,ret5:5.1,
+   desc:'US junk bonds hedged to CAD. Higher yield than investment-grade but substantial credit risk — behaves more like equity in downturns. Monthly distributions.'},
+  // ── CA COMMODITY ──
+  {t:'CGL',n:'iShares Gold Bullion ETF (CAD-hedged)',c:'commodity',r:4,ex:'CA',note:'Physical gold hedged',
+   mer:0.55,issuer:'BlackRock (iShares)',index:'Physical gold',inception:'2009-05-28',dist:'None',
+   ret1:28.4,ret3:15.2,ret5:13.8,
+   desc:'Physical gold bullion held at a custodian, hedged to CAD. Tracks gold price without currency exposure. Popular inflation hedge and portfolio diversifier.'},
+  {t:'PHYS',n:'Sprott Physical Gold Trust',c:'commodity',r:4,ex:'CA',note:'Physical gold bullion',
+   mer:0.35,issuer:'Sprott Asset Management',index:'Physical gold',inception:'2010-02-26',dist:'None',
+   ret1:29.1,ret3:15.8,ret5:14.2,
+   desc:'Lower MER than CGL. Physical gold stored at Royal Canadian Mint. Eligible for favorable US tax treatment for American holders.'},
+  {t:'PSLV',n:'Sprott Physical Silver Trust',c:'commodity',r:5,ex:'CA',note:'Physical silver bullion',
+   mer:0.35,issuer:'Sprott Asset Management',index:'Physical silver',inception:'2010-10-28',dist:'None',
+   ret1:22.4,ret3:8.1,ret5:10.2,
+   desc:'Physical silver bullion. More volatile than gold — silver has industrial demand drivers in addition to monetary properties.'},
+  // ── US LISTED ──
+  {t:'VOO',n:'Vanguard S&P 500 ETF',c:'us-equity',r:4,ex:'US',note:'S&P 500 index',
+   mer:0.03,issuer:'Vanguard USA',index:'S&P 500',inception:'2010-09-07',dist:'Quarterly',
+   ret1:30.1,ret3:16.8,ret5:18.3,
+   desc:'One of the world\'s largest ETFs. Lowest-cost S&P 500 exposure available. If held in an RRSP, withholding tax on US dividends is waived under the Canada-US tax treaty.'},
+  {t:'VTI',n:'Vanguard Total Stock Market ETF',c:'us-equity',r:4,ex:'US',note:'Total US market',
+   mer:0.03,issuer:'Vanguard USA',index:'CRSP US Total Market',inception:'2001-05-24',dist:'Quarterly',
+   ret1:30.4,ret3:17.0,ret5:18.6,
+   desc:'~4,000 US stocks from large to small cap. Broadest US market exposure at near-zero cost.'},
+  {t:'IVV',n:'iShares Core S&P 500 ETF',c:'us-equity',r:4,ex:'US',note:'S&P 500 index',
+   mer:0.03,issuer:'BlackRock (iShares)',index:'S&P 500',inception:'2000-05-15',dist:'Quarterly',
+   ret1:30.0,ret3:16.7,ret5:18.2,
+   desc:'Blackrock\'s flagship S&P 500 ETF. One of the most liquid ETFs in the world. Essentially identical to VOO.'},
+  {t:'SPY',n:'SPDR S&P 500 ETF Trust',c:'us-equity',r:4,ex:'US',note:'S&P 500 — original ETF',
+   mer:0.09,issuer:'State Street SPDR',index:'S&P 500',inception:'1993-01-22',dist:'Quarterly',
+   ret1:29.9,ret3:16.6,ret5:18.1,
+   desc:'The original S&P 500 ETF, launched in 1993. Higher MER than VOO/IVV — mostly held by institutions and traders for its exceptional liquidity. Long-term investors prefer VOO.'},
+  {t:'QQQ',n:'Invesco QQQ Trust (Nasdaq-100)',c:'us-equity',r:5,ex:'US',note:'Nasdaq-100 tech heavy',
+   mer:0.20,issuer:'Invesco',index:'Nasdaq-100',inception:'1999-03-10',dist:'Quarterly',
+   ret1:38.4,ret3:18.2,ret5:21.9,
+   desc:'Top 100 non-financial Nasdaq companies — heavily tech weighted (AAPL, MSFT, NVDA, META, AMZN). High return potential, high volatility, high tech concentration.'},
+  {t:'VEA',n:'Vanguard FTSE Developed Markets ETF',c:'intl-equity',r:4,ex:'US',note:'Developed ex-US',
+   mer:0.05,issuer:'Vanguard USA',index:'FTSE Developed All Cap ex US',inception:'2007-07-20',dist:'Quarterly',
+   ret1:16.8,ret3:8.0,ret5:8.7,
+   desc:'Broad developed market ETF excluding the US — Europe, Japan, Australasia, Canada. Ultra-low MER.'},
+  {t:'IEFA',n:'iShares Core MSCI EAFE ETF',c:'intl-equity',r:4,ex:'US',note:'Developed ex-North America',
+   mer:0.07,issuer:'BlackRock (iShares)',index:'MSCI EAFE IMI',inception:'2012-10-18',dist:'Semi-annual',
+   ret1:16.6,ret3:7.8,ret5:8.5,
+   desc:'Europe, Australasia, and Far East — excludes both US and Canada. iShares\' core international ETF.'},
+  {t:'VWO',n:'Vanguard FTSE Emerging Markets ETF',c:'em-equity',r:5,ex:'US',note:'Emerging markets',
+   mer:0.08,issuer:'Vanguard USA',index:'FTSE Emerging Markets All Cap China A Inclusion',inception:'2005-03-04',dist:'Semi-annual',
+   ret1:10.8,ret3:1.8,ret5:4.4,
+   desc:'Broad emerging markets including China, India, Taiwan, Brazil. Low MER for the category.'},
+  {t:'IEMG',n:'iShares Core MSCI Emerging Markets ETF',c:'em-equity',r:5,ex:'US',note:'Emerging markets',
+   mer:0.09,issuer:'BlackRock (iShares)',index:'MSCI Emerging Markets Investable Market',inception:'2012-10-18',dist:'Semi-annual',
+   ret1:10.9,ret3:1.9,ret5:4.5,
+   desc:'iShares\' core emerging markets ETF. Very similar to VWO in composition.'},
+  {t:'VT',n:'Vanguard Total World Stock ETF',c:'intl-equity',r:4,ex:'US',note:'Total world equity',
+   mer:0.07,issuer:'Vanguard USA',index:'FTSE Global All Cap',inception:'2008-06-24',dist:'Quarterly',
+   ret1:24.2,ret3:12.9,ret5:13.9,
+   desc:'One ETF, the entire world — US, international developed, and emerging markets (~9,500 stocks). The ultimate lazy portfolio holding.'},
+  {t:'VXUS',n:'Vanguard Total International Stock ETF',c:'intl-equity',r:4,ex:'US',note:'All international ex-US',
+   mer:0.07,issuer:'Vanguard USA',index:'FTSE Global All Cap ex US',inception:'2011-01-26',dist:'Quarterly',
+   ret1:17.1,ret3:8.1,ret5:8.8,
+   desc:'All international ex-US in one ETF. Often paired with VTI for a simple 2-fund global portfolio.'},
+  {t:'BND',n:'Vanguard Total Bond Market ETF',c:'bonds-us',r:2,ex:'US',note:'Total US bond market',
+   mer:0.03,issuer:'Vanguard USA',index:'Bloomberg US Aggregate Float Adjusted',inception:'2007-04-03',dist:'Monthly',
+   ret1:4.8,ret3:0.1,ret5:1.4,
+   desc:'The US bond market equivalent of ZAG. Government and corporate investment-grade bonds. Ultra-low MER.'},
+  {t:'AGG',n:'iShares Core US Aggregate Bond ETF',c:'bonds-us',r:2,ex:'US',note:'US bond aggregate',
+   mer:0.03,issuer:'BlackRock (iShares)',index:'Bloomberg US Aggregate Bond',inception:'2003-09-22',dist:'Monthly',
+   ret1:4.7,ret3:0.0,ret5:1.3,
+   desc:'iShares equivalent of BND. One of the largest bond ETFs in the world. The benchmark US bond fund.'},
+  {t:'BNDX',n:'Vanguard Total International Bond ETF',c:'bonds-intl',r:2,ex:'US',note:'International bonds hedged USD',
+   mer:0.07,issuer:'Vanguard USA',index:'Bloomberg Global Aggregate ex-USD Float Adj RIC Capped',inception:'2013-05-31',dist:'Monthly',
+   ret1:4.2,ret3:0.8,ret5:1.8,
+   desc:'Non-US investment-grade bonds, currency-hedged to USD. Adds global bond diversification. Low MER.'},
+  {t:'TLT',n:'iShares 20+ Year Treasury Bond ETF',c:'bonds-us',r:4,ex:'US',note:'Long-term US Treasuries',
+   mer:0.15,issuer:'BlackRock (iShares)',index:'ICE US Treasury 20+ Year Bond',inception:'2002-07-22',dist:'Monthly',
+   ret1:-4.2,ret3:-12.8,ret5:-5.4,
+   desc:'Long-duration US Treasury bonds. Extremely sensitive to interest rates — significant losses 2021–2023 as rates rose. Used for hedging and tactical rate plays, not buy-and-hold.'},
+  {t:'SHY',n:'iShares 1-3 Year Treasury Bond ETF',c:'bonds-us',r:1,ex:'US',note:'Short-term Treasuries',
+   mer:0.15,issuer:'BlackRock (iShares)',index:'ICE US Treasury 1-3 Year Bond',inception:'2002-07-22',dist:'Monthly',
+   ret1:5.4,ret3:3.2,ret5:2.8,
+   desc:'Short-term US government bonds. Very low interest rate risk, near-cash equivalent return. Capital preservation.'},
+  {t:'SGOV',n:'iShares 0-3 Month Treasury Bond ETF',c:'bonds-us',r:1,ex:'US',note:'Ultra short treasury',
+   mer:0.09,issuer:'BlackRock (iShares)',index:'ICE 0-3 Month US Treasury Securities',inception:'2020-05-26',dist:'Monthly',
+   ret1:5.2,ret3:4.1,ret5:null,
+   desc:'Ultra-short Treasury bills. Essentially a cash equivalent with slightly better yield than a savings account. Near-zero volatility.'},
+  {t:'TIPS',n:'iShares TIPS Bond ETF',c:'bonds-us',r:2,ex:'US',note:'Inflation-protected bonds',
+   mer:0.19,issuer:'BlackRock (iShares)',index:'Bloomberg US Treasury Inflation Protected Securities',inception:'2003-12-04',dist:'Monthly',
+   ret1:4.1,ret3:-0.8,ret5:2.1,
+   desc:'US Treasury bonds with principal adjusted for inflation. Good hedge against unexpected inflation spikes.'},
+  {t:'LQD',n:'iShares iBoxx Investment Grade Corporate Bond',c:'bonds-us',r:2,ex:'US',note:'IG corporate bonds',
+   mer:0.14,issuer:'BlackRock (iShares)',index:'Markit iBoxx USD Liquid Investment Grade',inception:'2002-07-22',dist:'Monthly',
+   ret1:4.9,ret3:-0.4,ret5:1.2,
+   desc:'US investment-grade corporate bonds. Higher yield than Treasuries, modest credit risk. Rate-sensitive.'},
+  {t:'VNQ',n:'Vanguard Real Estate ETF',c:'reit',r:4,ex:'US',note:'US REITs',
+   mer:0.13,issuer:'Vanguard USA',index:'MSCI US Investable Market Real Estate 25/50',inception:'2004-09-23',dist:'Quarterly',
+   ret1:9.8,ret3:2.4,ret5:5.1,
+   desc:'Broad US REIT exposure — residential, commercial, industrial. Income-generating, rate-sensitive. Quarterly distributions.'},
+  {t:'GLD',n:'SPDR Gold Shares ETF',c:'commodity',r:4,ex:'US',note:'Physical gold',
+   mer:0.40,issuer:'State Street SPDR',index:'Physical gold',inception:'2004-11-18',dist:'None',
+   ret1:28.9,ret3:15.6,ret5:14.1,
+   desc:'The original and most liquid gold ETF. Higher MER than IAU but tighter bid-ask spreads for large trades. Physical gold held at HSBC vaults.'},
+  {t:'IAU',n:'iShares Gold Trust',c:'commodity',r:4,ex:'US',note:'Physical gold',
+   mer:0.25,issuer:'BlackRock (iShares)',index:'Physical gold',inception:'2005-01-21',dist:'None',
+   ret1:29.0,ret3:15.7,ret5:14.2,
+   desc:'Lower MER than GLD. Physical gold held at custodian. Better choice for long-term buy-and-hold than GLD.'},
+  {t:'SLV',n:'iShares Silver Trust',c:'commodity',r:5,ex:'US',note:'Physical silver',
+   mer:0.50,issuer:'BlackRock (iShares)',index:'Physical silver',inception:'2006-04-21',dist:'None',
+   ret1:22.1,ret3:7.8,ret5:9.8,
+   desc:'Physical silver bullion. More volatile than gold due to industrial demand component. Smaller market = larger price swings.'},
+  {t:'GDX',n:'VanEck Gold Miners ETF',c:'commodity',r:6,ex:'US',note:'Gold mining companies',
+   mer:0.51,issuer:'VanEck',index:'NYSE Arca Gold Miners',inception:'2006-05-16',dist:'Semi-annual',
+   ret1:34.2,ret3:12.1,ret5:10.8,
+   desc:'Global gold mining stocks. Leveraged to gold price — miners amplify bullion moves. Higher volatility than physical gold, adds operational and geopolitical risk.'},
+  {t:'VIG',n:'Vanguard Dividend Appreciation ETF',c:'us-equity',r:3,ex:'US',note:'US dividend growers',
+   mer:0.06,issuer:'Vanguard USA',index:'S&P US Dividend Growers',inception:'2006-04-21',dist:'Quarterly',
+   ret1:22.4,ret3:11.8,ret5:13.2,
+   desc:'US companies that have grown dividends for 10+ consecutive years. Quality factor tilt. Lower yield but better dividend growth than VYM.'},
+  {t:'VYM',n:'Vanguard High Dividend Yield ETF',c:'us-equity',r:3,ex:'US',note:'US high dividend',
+   mer:0.06,issuer:'Vanguard USA',index:'FTSE High Dividend Yield',inception:'2006-11-10',dist:'Quarterly',
+   ret1:21.8,ret3:11.4,ret5:12.8,
+   desc:'High-yielding US dividend stocks. Value-tilted, financials and energy heavy. Higher current yield than VIG but less emphasis on dividend growth.'},
+  {t:'SCHD',n:'Schwab US Dividend Equity ETF',c:'us-equity',r:3,ex:'US',note:'US quality dividend',
+   mer:0.06,issuer:'Schwab ETFs',index:'Dow Jones US Dividend 100',inception:'2011-10-20',dist:'Quarterly',
+   ret1:22.1,ret3:11.6,ret5:13.0,
+   desc:'100 high-quality dividend stocks screened for cash flow, return on equity, and dividend growth. One of the most popular dividend ETFs for income investors.'},
+  {t:'USMV',n:'iShares MSCI USA Min Vol Factor ETF',c:'us-equity',r:3,ex:'US',note:'US low volatility',
+   mer:0.15,issuer:'BlackRock (iShares)',index:'MSCI USA Minimum Volatility (USD)',inception:'2011-10-18',dist:'Quarterly',
+   ret1:18.2,ret3:10.1,ret5:11.4,
+   desc:'US stocks with historically low volatility. Defensive tilt — outperforms in downturns, underperforms in strong bull markets.'},
+  {t:'ACWI',n:'iShares MSCI ACWI ETF',c:'intl-equity',r:4,ex:'US',note:'All-world equity',
+   mer:0.32,issuer:'BlackRock (iShares)',index:'MSCI ACWI',inception:'2008-03-26',dist:'Semi-annual',
+   ret1:23.8,ret3:12.6,ret5:13.7,
+   desc:'All-country world index — US, international developed, and emerging markets in one ETF. Higher MER than VT.'},
+  {t:'VGT',n:'Vanguard Information Technology ETF',c:'sector',r:5,ex:'US',note:'US tech sector',
+   mer:0.10,issuer:'Vanguard USA',index:'MSCI US Investable Market Information Technology 25/50',inception:'2004-01-26',dist:'Quarterly',
+   ret1:38.2,ret3:18.0,ret5:21.7,
+   desc:'US information technology stocks — AAPL, NVDA, MSFT dominate. High growth, high volatility.'},
+  {t:'XLK',n:'Technology Select Sector SPDR Fund',c:'sector',r:5,ex:'US',note:'US tech sector',
+   mer:0.09,issuer:'State Street SPDR',index:'S&P Tech Select Sector',inception:'1998-12-16',dist:'Quarterly',
+   ret1:37.8,ret3:17.8,ret5:21.4,
+   desc:'S&P 500 tech stocks. AAPL and MSFT together can exceed 40% of the fund. More concentrated than VGT.'},
+  {t:'XLF',n:'Financial Select Sector SPDR Fund',c:'sector',r:4,ex:'US',note:'US financials',
+   mer:0.09,issuer:'State Street SPDR',index:'S&P Financial Select Sector',inception:'1998-12-16',dist:'Quarterly',
+   ret1:28.4,ret3:14.2,ret5:14.8,
+   desc:'US financial sector — banks, insurers, asset managers. Benefits from higher rates and strong economy.'},
+  {t:'XLE',n:'Energy Select Sector SPDR Fund',c:'sector',r:5,ex:'US',note:'US energy',
+   mer:0.09,issuer:'State Street SPDR',index:'S&P Energy Select Sector',inception:'1998-12-16',dist:'Quarterly',
+   ret1:11.4,ret3:14.8,ret5:12.2,
+   desc:'US energy sector — major oil companies (XOM, CVX) dominate. Highly cyclical, oil price sensitive.'},
+  {t:'XLV',n:'Health Care Select Sector SPDR Fund',c:'sector',r:4,ex:'US',note:'US health care',
+   mer:0.09,issuer:'State Street SPDR',index:'S&P Health Care Select Sector',inception:'1998-12-16',dist:'Quarterly',
+   ret1:14.2,ret3:8.8,ret5:11.4,
+   desc:'US healthcare — pharma, biotech, medical devices, managed care. Defensive sector with growth characteristics.'},
+  {t:'XLU',n:'Utilities Select Sector SPDR Fund',c:'sector',r:3,ex:'US',note:'US utilities',
+   mer:0.09,issuer:'State Street SPDR',index:'S&P Utilities Select Sector',inception:'1998-12-16',dist:'Quarterly',
+   ret1:14.8,ret3:2.4,ret5:5.8,
+   desc:'US utilities — electric, gas, water. Defensive, income-generating, rate-sensitive. Acts as a bond proxy.'},
+  {t:'XLP',n:'Consumer Staples Select Sector SPDR',c:'sector',r:3,ex:'US',note:'US consumer staples',
+   mer:0.09,issuer:'State Street SPDR',index:'S&P Consumer Staples Select Sector',inception:'1998-12-16',dist:'Quarterly',
+   ret1:11.8,ret3:5.2,ret5:8.1,
+   desc:'US consumer staples — food, beverages, household products. Very defensive, holds up well in recessions.'},
+  {t:'XLY',n:'Consumer Discretionary Select Sector SPDR',c:'sector',r:4,ex:'US',note:'US consumer discretionary',
+   mer:0.09,issuer:'State Street SPDR',index:'S&P Consumer Discretionary Select Sector',inception:'1998-12-16',dist:'Quarterly',
+   ret1:24.1,ret3:8.4,ret5:12.8,
+   desc:'US consumer discretionary — AMZN, TSLA, HD dominate. Growth-oriented, cyclical.'},
+  {t:'XLB',n:'Materials Select Sector SPDR Fund',c:'sector',r:4,ex:'US',note:'US materials',
+   mer:0.09,issuer:'State Street SPDR',index:'S&P Materials Select Sector',inception:'1998-12-16',dist:'Quarterly',
+   ret1:14.2,ret3:7.8,ret5:10.2,
+   desc:'US materials — chemicals, metals, mining, packaging. Cyclical, commodity-sensitive.'},
+  {t:'XLI',n:'Industrial Select Sector SPDR Fund',c:'sector',r:4,ex:'US',note:'US industrials',
+   mer:0.09,issuer:'State Street SPDR',index:'S&P Industrials Select Sector',inception:'1998-12-16',dist:'Quarterly',
+   ret1:22.4,ret3:12.1,ret5:13.8,
+   desc:'US industrials — aerospace, defense, transportation, machinery. Economically sensitive.'},
+  {t:'IWM',n:'iShares Russell 2000 ETF',c:'us-equity',r:5,ex:'US',note:'US small cap',
+   mer:0.19,issuer:'BlackRock (iShares)',index:'Russell 2000',inception:'2000-05-22',dist:'Quarterly',
+   ret1:18.4,ret3:6.2,ret5:9.8,
+   desc:'~2,000 US small-cap stocks. Higher domestic revenue exposure, higher growth potential, higher volatility than large caps.'},
+  {t:'IJH',n:'iShares Core S&P Mid-Cap ETF',c:'us-equity',r:4,ex:'US',note:'US mid cap',
+   mer:0.05,issuer:'BlackRock (iShares)',index:'S&P MidCap 400',inception:'2000-05-22',dist:'Quarterly',
+   ret1:22.1,ret3:10.8,ret5:12.4,
+   desc:'US mid-cap companies — often overlooked sweet spot between small-cap risk and large-cap lower growth.'},
+  {t:'JEPI',n:'JPMorgan Equity Premium Income ETF',c:'us-equity',r:4,ex:'US',note:'Covered call income',
+   mer:0.35,issuer:'JPMorgan Asset Management',index:'Active',inception:'2020-05-20',dist:'Monthly',
+   ret1:12.8,ret3:9.2,ret5:null,
+   desc:'Holds S&P 500 stocks and sells equity-linked notes to generate high monthly income. Lower upside participation in strong bull markets in exchange for elevated yield (~7–10%).'},
+  {t:'JEPQ',n:'JPMorgan Nasdaq Equity Premium Income ETF',c:'us-equity',r:5,ex:'US',note:'Covered call Nasdaq income',
+   mer:0.35,issuer:'JPMorgan Asset Management',index:'Active',inception:'2022-05-03',dist:'Monthly',
+   ret1:18.4,ret3:null,ret5:null,
+   desc:'Nasdaq-100 equivalent of JEPI. Higher income potential, higher volatility than JEPI. Significant upside cap in tech bull runs.'},
+  {t:'ARKK',n:'ARK Innovation ETF',c:'sector',r:7,ex:'US',note:'Disruptive innovation — speculative',
+   mer:0.75,issuer:'ARK Invest',index:'Active',inception:'2014-10-31',dist:'Annual',
+   ret1:-8.2,ret3:-21.4,ret5:-4.8,
+   desc:'Actively managed fund targeting disruptive innovation (AI, genomics, fintech, space). Famous for 2020 bull run (+150%) and 2021–2022 collapse (-75%). Very high risk, very high MER. Speculative.'},
+  {t:'TQQQ',n:'ProShares UltraPro QQQ',c:'leveraged',r:7,ex:'US',note:'3x leveraged Nasdaq-100',
+   mer:0.88,issuer:'ProShares',index:'Nasdaq-100 (3x)',inception:'2010-02-09',dist:'Quarterly',
+   ret1:98.4,ret3:24.8,ret5:42.1,
+   desc:'3x daily leveraged Nasdaq-100. Returns do NOT equal 3x long-term due to volatility decay. In flat or volatile markets, loses money even if index is flat. Strictly for short-term tactical use.'},
+  {t:'SQQQ',n:'ProShares UltraPro Short QQQ',c:'leveraged',r:7,ex:'US',note:'3x inverse Nasdaq-100',
+   mer:0.95,issuer:'ProShares',index:'Nasdaq-100 (-3x)',inception:'2010-02-09',dist:'None',
+   ret1:-62.1,ret3:-48.4,ret5:-54.2,
+   desc:'3x inverse Nasdaq-100 — profits when Nasdaq falls. Devastating long-term decay in bull markets. Only suitable for very short-term hedging.'},
+  {t:'UPRO',n:'ProShares UltraPro S&P 500',c:'leveraged',r:7,ex:'US',note:'3x leveraged S&P 500',
+   mer:0.91,issuer:'ProShares',index:'S&P 500 (3x)',inception:'2009-06-23',dist:'Quarterly',
+   ret1:84.2,ret3:38.4,ret5:46.8,
+   desc:'3x daily leveraged S&P 500. Same volatility decay risk as TQQQ. Not for buy-and-hold — strictly tactical.'},
+  {t:'IBIT',n:'iShares Bitcoin Trust ETF',c:'crypto',r:7,ex:'US',note:'Spot Bitcoin ETF',
+   mer:0.25,issuer:'BlackRock (iShares)',index:'Bitcoin (spot)',inception:'2024-01-11',dist:'None',
+   ret1:82.4,ret3:null,ret5:null,
+   desc:'US spot Bitcoin ETF — directly holds Bitcoin. First approved by SEC in January 2024. Lower fees than GBTC. Extremely volatile — Bitcoin has had 80%+ drawdowns historically.'},
+  {t:'FBTC',n:'Fidelity Wise Origin Bitcoin Fund',c:'crypto',r:7,ex:'US',note:'Spot Bitcoin ETF',
+   mer:0.25,issuer:'Fidelity',index:'Bitcoin (spot)',inception:'2024-01-11',dist:'None',
+   ret1:82.1,ret3:null,ret5:null,
+   desc:'Fidelity\'s spot Bitcoin ETF. Fidelity self-custodies the Bitcoin, unlike most competitors who use Coinbase. Essentially identical performance to IBIT.'},
+  {t:'ETHE',n:'Grayscale Ethereum Trust ETF',c:'crypto',r:7,ex:'US',note:'Spot Ethereum ETF',
+   mer:2.50,issuer:'Grayscale',index:'Ethereum (spot)',inception:'2024-07-23',dist:'None',
+   ret1:null,ret3:null,ret5:null,
+   desc:'US spot Ethereum ETF. Very high MER compared to Bitcoin ETFs. Ethereum is more volatile and less established as a store of value than Bitcoin.'},
 ];
 
 // ── STATE ─────────────────────────────────────────────────────
@@ -1026,7 +1374,7 @@ let unsubPortfolios = null;
 
 // ── HELPERS ───────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
-const fmt = n => '$' + Math.round(n).toLocaleString();
+const fmt = n => '$' + Number(n).toLocaleString('en-CA', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 const pct = n => n.toFixed(1) + '%';
 
 function toast(msg) {
@@ -1372,6 +1720,83 @@ window.setCash = async () => {
   toast('Cash balance updated');
 };
 
+window.openReinvest = () => {
+  const port = getCurPort();
+  if (!port) return;
+  const cash = port.cash || 0;
+  openModal('Reinvest cash',
+    `<p style="color:var(--slate);font-size:13px;margin-bottom:1rem;">Available cash: <strong style="color:#5cb88a;">${fmt(cash)}</strong></p>
+     <div class="form-group" style="margin-bottom:10px;">
+       <label>Search for a security</label>
+       <div class="search-wrap" style="position:relative;">
+         <input type="text" id="reinvest-search" placeholder="Ticker or fund name..." oninput="doReinvestSearch()" onkeydown="if(event.key==='Escape')$('reinvest-results').style.display='none'" autocomplete="off" />
+         <div id="reinvest-results" style="position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:200;background:var(--navy-2);border:1px solid var(--navy-4);border-radius:var(--radius);max-height:200px;overflow-y:auto;display:none;box-shadow:0 8px 24px rgba(0,0,0,0.4);"></div>
+       </div>
+       <div id="reinvest-sel-label" style="font-size:12px;color:var(--slate);margin-top:5px;min-height:18px;"></div>
+     </div>
+     <div class="form-group">
+       <label>Amount to invest ($)</label>
+       <input type="text" inputmode="decimal" id="reinvest-amt" value="${cash}" />
+     </div>
+     <p style="font-size:12px;color:var(--slate);margin-top:0.5rem;">This will deduct from your cash balance and add to your holdings.</p>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+     <button class="btn btn-amber" id="reinvest-confirm-btn" onclick="submitReinvest()" disabled>Invest</button>`
+  );
+  setTimeout(() => $('reinvest-search')?.focus(), 100);
+};
+
+window.doReinvestSearch = () => {
+  const q = ($('reinvest-search')?.value || '').trim().toLowerCase();
+  const res = $('reinvest-results');
+  if (!res) return;
+  if (q.length < 1) { res.style.display = 'none'; return; }
+  const all = getAllDb();
+  const matches = all.filter(s => s.t.toLowerCase().includes(q) || s.n.toLowerCase().includes(q) || (s.note||'').toLowerCase().includes(q)).slice(0, 10);
+  if (!matches.length) { res.style.display = 'none'; return; }
+  res.style.display = 'block';
+  res.innerHTML = matches.map(s => `
+    <div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--navy-3);display:grid;grid-template-columns:60px 1fr auto;gap:8px;align-items:center;font-size:13px;transition:background 0.12s;" onmouseover="this.style.background='var(--navy-3)'" onmouseout="this.style.background=''" onclick="selectReinvestSec('${s.t}')">
+      <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:500;color:var(--amber);">${s.t}</span>
+      <span style="font-size:12px;color:var(--slate-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.n}</span>
+      <span class="badge r${s.r}" style="font-size:10px;">Risk ${s.r}</span>
+    </div>
+  `).join('');
+};
+
+window.selectReinvestSec = (ticker) => {
+  const all = getAllDb();
+  const sec = all.find(s => s.t === ticker);
+  if (!sec) return;
+  window._reinvestSec = sec;
+  const inp = $('reinvest-search');
+  if (inp) inp.value = ticker + ' — ' + sec.n;
+  const res = $('reinvest-results');
+  if (res) res.style.display = 'none';
+  const lbl = $('reinvest-sel-label');
+  if (lbl) lbl.textContent = CATS[sec.c]?.label + ' · Risk ' + sec.r + '/7 · ' + sec.note;
+  const btn = $('reinvest-confirm-btn');
+  if (btn) btn.disabled = false;
+};
+
+window.submitReinvest = async () => {
+  const port = getCurPort();
+  if (!port || !window._reinvestSec) return;
+  const amt = parseFloat($('reinvest-amt').value);
+  if (isNaN(amt) || amt <= 0) return;
+  const cash = port.cash || 0;
+  if (amt > cash + 0.001) { toast('Amount exceeds cash balance'); return; }
+  const sec = window._reinvestSec;
+  const ex = port.holdings.find(h => h.t === sec.t);
+  if (ex) ex.amount += amt;
+  else port.holdings.push({ t: sec.t, n: sec.n, c: sec.c, r: sec.r, amount: amt });
+  port.cash = Math.max(0, cash - amt);
+  window._reinvestSec = null;
+  closeModal();
+  await savePortfolio();
+  render();
+  toast(fmt(amt) + ' invested in ' + sec.t);
+};
+
 window.openLiquidate = (idx) => {
   const port = getCurPort();
   if (!port) return;
@@ -1379,7 +1804,7 @@ window.openLiquidate = (idx) => {
   openModal('Liquidate ' + h.t,
     `<p style="color:var(--slate);font-size:13px;margin-bottom:1rem;">Current value: <strong style="color:var(--white);">${fmt(h.amount)}</strong></p>
      <p style="color:var(--slate);font-size:13px;margin-bottom:1rem;">Enter the amount you sold for. The holding will be removed and the proceeds added to your cash balance.</p>
-     <div class="form-group"><label>Sale proceeds ($)</label><input type="text" inputmode="numeric" id="liq-amt" value="${h.amount}" /></div>`,
+     <div class="form-group"><label>Sale proceeds ($)</label><input type="text" inputmode="decimal" id="liq-amt" value="${h.amount}" /></div>`,
     `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
      <button class="btn btn-amber" onclick="submitLiquidate(${idx})">Liquidate</button>`
   );
@@ -1400,6 +1825,39 @@ window.submitLiquidate = async (idx) => {
   toast(ticker + ' liquidated — ' + fmt(proceeds) + ' added to cash');
 };
 
+window.openEditHolding = (idx) => {
+  const port = getCurPort();
+  if (!port) return;
+  const h = port.holdings[idx];
+  openModal('Update ' + h.t,
+    `<p style="color:var(--slate);font-size:13px;margin-bottom:1rem;">${h.n}</p>
+     <div class="form-group">
+       <label>Current value ($)</label>
+       <input type="text" inputmode="decimal" id="edit-amt" value="${h.amount}" />
+     </div>
+     <p style="font-size:12px;color:var(--slate);margin-top:0.5rem;">Update to reflect the current market value of this holding.</p>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+     <button class="btn btn-amber" onclick="submitEditHolding(${idx})">Update</button>`
+  );
+  setTimeout(() => { const el = $('edit-amt'); if(el){el.focus();el.select();} }, 100);
+};
+
+window.submitEditHolding = async (idx) => {
+  const port = getCurPort();
+  if (!port) return;
+  const val = parseFloat($('edit-amt').value);
+  if (isNaN(val) || val < 0) return;
+  const ticker = port.holdings[idx].t;
+  const old = port.holdings[idx].amount;
+  port.holdings[idx].amount = val;
+  closeModal();
+  await savePortfolio();
+  render();
+  const diff = val - old;
+  const sign = diff >= 0 ? '+' : '';
+  toast(ticker + ' updated — ' + sign + fmt(diff) + ' change');
+};
+
 // ── RENDER ────────────────────────────────────────────────────
 function render() {
   const port = getCurPort();
@@ -1409,6 +1867,8 @@ function render() {
   if (!port || !port.holdings || port.holdings.length === 0) {
     $('port-subtitle').textContent = 'Add holdings to get started';
     $('cash-display').textContent = fmt(port?.cash || 0);
+    const rb = $('reinvest-btn');
+    if (rb) rb.style.display = (port?.cash || 0) > 0 ? 'inline-flex' : 'none';
     $('hlist').innerHTML = '<div class="empty"><div class="big">◈</div><p>No holdings yet. Search above to add your first one.</p></div>';
     $('metrics').innerHTML = '';
     $('aleg').innerHTML = '';
@@ -1422,6 +1882,8 @@ function render() {
   const total = holdingsTotal + cash;
   $('port-subtitle').textContent = fmt(total) + ' across ' + holdings.length + ' holding' + (holdings.length>1?'s':'') + (cash > 0 ? ' + cash' : '');
   $('cash-display').textContent = fmt(cash);
+  const rb = $('reinvest-btn');
+  if (rb) rb.style.display = cash > 0 ? 'inline-flex' : 'none';
 
   // Holdings list
   $('hlist').innerHTML = holdings.map((h,i) => `
@@ -1441,7 +1903,8 @@ function render() {
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
           <button class="del-btn" onclick="removeHolding(${i})" title="Delete">×</button>
-          <button class="liq-btn" onclick="openLiquidate(${i})" title="Liquidate">$</button>
+          <button class="liq-btn" onclick="openLiquidate(${i})" title="Liquidate to cash">$</button>
+          <button class="edit-btn" onclick="openEditHolding(${i})" title="Update value">✎</button>
         </div>
       </div>
       <div class="hbar-wrap"><div class="hbar" style="width:${pct(h.amount/total*100)};background:${CATS[h.c]?.color||'#888'}"></div></div>
@@ -1494,22 +1957,22 @@ window.renderDB = () => {
   ).join('');
   const all = getAllDb();
   const rows = all.filter(s => {
-    const mq = !q || s.t.toLowerCase().includes(q) || s.n.toLowerCase().includes(q) || (s.note||'').toLowerCase().includes(q);
+    const mq = !q || s.t.toLowerCase().includes(q) || s.n.toLowerCase().includes(q) || (s.note||'').toLowerCase().includes(q) || (s.issuer||'').toLowerCase().includes(q);
     const mc = dbFilter==='all' || s.c===dbFilter;
     return mq && mc;
   });
   if (!rows.length) { $('db-table').innerHTML = '<div class="empty" style="padding:2rem;"><p>No ETFs found for that search.</p></div>'; return; }
   $('db-table').innerHTML = `<table>
     <thead><tr>
-      <th>Ticker</th><th>Name</th><th>Category</th><th>Risk</th><th>Exch</th><th>Notes</th><th></th>
+      <th>Ticker</th><th>Name</th><th>Category</th><th>Risk</th><th>MER</th><th>Exch</th><th></th>
     </tr></thead>
     <tbody>${rows.map(s=>`<tr>
-      <td class="mono">${s.t}</td>
-      <td style="color:var(--slate-2);max-width:220px;">${s.n}</td>
+      <td><span class="mono db-ticker-link" onclick="openETFDetail('${s.t}')" title="View details" style="cursor:pointer;text-decoration:underline;text-underline-offset:3px;">${s.t}</span></td>
+      <td style="color:var(--slate-2);max-width:200px;">${s.n}</td>
       <td><span class="badge cat-badge" style="background:${CATS[s.c]?.color}22;color:${CATS[s.c]?.color};">${CATS[s.c]?.label||s.c}</span></td>
       <td><span class="badge r${s.r}">Risk ${s.r}/7</span></td>
+      <td style="color:var(--slate);font-size:12px;white-space:nowrap;">${s.mer != null ? s.mer.toFixed(2)+'%' : '—'}</td>
       <td style="color:var(--slate);font-size:12px;">${s.ex}</td>
-      <td style="color:var(--slate);font-size:12px;max-width:160px;">${s.note||''}</td>
       <td><button class="btn btn-ghost" style="font-size:11px;padding:4px 10px;white-space:nowrap;" onclick="quickAdd('${s.t}')">+ Add</button></td>
     </tr>`).join('')}</tbody>
   </table>`;
@@ -1517,13 +1980,73 @@ window.renderDB = () => {
 
 window.setDBFilter = (k) => { dbFilter = k; renderDB(); };
 
+window.openETFDetail = (ticker) => {
+  const all = getAllDb();
+  const s = all.find(x => x.t === ticker);
+  if (!s) return;
+  const cat = CATS[s.c] || {};
+  const fmtRet = v => v != null ? (v > 0 ? '+' : '') + v.toFixed(1) + '%' : '—';
+  const retColor = v => v == null ? 'var(--slate)' : v >= 0 ? '#5cb88a' : '#e05c5c';
+
+  openModal(s.t,
+    `<div style="margin-bottom:1rem;">
+       <div style="font-size:13px;color:var(--slate-2);margin-bottom:6px;">${s.n}</div>
+       <div style="display:flex;gap:6px;flex-wrap:wrap;">
+         <span class="badge cat-badge" style="background:${cat.color}22;color:${cat.color};">${cat.label||s.c}</span>
+         <span class="badge r${s.r}">Risk ${s.r}/7</span>
+         <span style="font-size:11px;padding:2px 7px;border-radius:20px;background:var(--navy-3);color:var(--slate);">${s.ex} listed</span>
+       </div>
+     </div>
+
+     ${s.desc ? `<p style="font-size:13px;color:var(--slate-2);line-height:1.6;margin-bottom:1.25rem;">${s.desc}</p>` : ''}
+
+     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem;">
+       <div style="background:var(--navy-3);border-radius:var(--radius);padding:10px 12px;">
+         <div style="font-size:10px;color:var(--slate);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;">MER</div>
+         <div style="font-size:18px;font-family:'DM Serif Display',serif;color:var(--amber);">${s.mer != null ? s.mer.toFixed(2)+'%' : '—'}</div>
+       </div>
+       <div style="background:var(--navy-3);border-radius:var(--radius);padding:10px 12px;">
+         <div style="font-size:10px;color:var(--slate);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;">Distributions</div>
+         <div style="font-size:15px;font-weight:500;color:var(--white);">${s.dist || '—'}</div>
+       </div>
+     </div>
+
+     <div style="background:var(--navy-3);border-radius:var(--radius);padding:10px 12px;margin-bottom:1rem;">
+       <div style="font-size:10px;color:var(--slate);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Approx. historical returns <span style="text-transform:none;letter-spacing:0;">(indicative only — past performance ≠ future results)</span></div>
+       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;">
+         <div>
+           <div style="font-size:10px;color:var(--slate);margin-bottom:3px;">1 year</div>
+           <div style="font-size:16px;font-weight:500;color:${retColor(s.ret1)};">${fmtRet(s.ret1)}</div>
+         </div>
+         <div>
+           <div style="font-size:10px;color:var(--slate);margin-bottom:3px;">3 year (ann.)</div>
+           <div style="font-size:16px;font-weight:500;color:${retColor(s.ret3)};">${fmtRet(s.ret3)}</div>
+         </div>
+         <div>
+           <div style="font-size:10px;color:var(--slate);margin-bottom:3px;">5 year (ann.)</div>
+           <div style="font-size:16px;font-weight:500;color:${retColor(s.ret5)};">${fmtRet(s.ret5)}</div>
+         </div>
+       </div>
+     </div>
+
+     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;">
+       ${s.issuer ? `<div style="color:var(--slate);">Issuer <span style="color:var(--slate-2);float:right;">${s.issuer}</span></div>` : ''}
+       ${s.inception ? `<div style="color:var(--slate);">Inception <span style="color:var(--slate-2);float:right;">${s.inception}</span></div>` : ''}
+       ${s.index ? `<div style="color:var(--slate);grid-column:1/-1;">Index tracked <span style="color:var(--slate-2);margin-left:8px;">${s.index}</span></div>` : ''}
+     </div>
+     <p style="font-size:11px;color:var(--navy-4);margin-top:1rem;">Returns are approximate and based on historical data. MER and fund details may have changed. Verify with the issuer before investing.</p>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Close</button>
+     <button class="btn btn-amber" onclick="closeModal();quickAdd('${s.t}')">+ Add to portfolio</button>`
+  );
+};
+
 window.quickAdd = (ticker) => {
   const all = getAllDb();
   const sec = all.find(s => s.t === ticker);
   if (!sec) return;
   openModal('Add ' + ticker,
     `<p style="color:var(--slate);font-size:13px;margin-bottom:1rem;">${sec.n}</p>
-     <div class="form-group"><label>Amount ($)</label><input type="text" inputmode="numeric" id="qa-amt" placeholder="0.00" /></div>`,
+     <div class="form-group"><label>Amount ($)</label><input type="text" inputmode="decimal" id="qa-amt" placeholder="0.00" /></div>`,
     `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
      <button class="btn btn-amber" onclick="submitQuickAdd('${ticker}')">Add to portfolio</button>`
   );
